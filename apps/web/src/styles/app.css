@@ -1,0 +1,144 @@
+/* ============================================================================
+   Everything that is not the poster: booking, tickets, the door.
+   Same variables, same loud type, less shouting — these are pages people have
+   to read carefully on a phone in a queue.
+   ========================================================================== */
+
+.page{min-height:100svh;display:flex;flex-direction:column}
+.page__body{
+  flex:1;width:100%;max-width:44rem;margin:0 auto;
+  padding:calc(var(--bar-h) + 2rem) var(--pad) 4rem;
+}
+
+/* --- boot / error ---------------------------------------------------------- */
+.boot{min-height:100svh;display:grid;place-content:center;text-align:center;padding:var(--pad)}
+.boot__mark{font-family:var(--display);font-size:clamp(2rem,10vw,4rem);letter-spacing:.02em;
+  color:transparent;-webkit-text-stroke:1px var(--line)}
+.boot__msg{margin-top:1rem;color:var(--accent);font-size:.85rem;letter-spacing:.08em}
+
+/* --- shared page type ------------------------------------------------------ */
+.book__eyebrow{font-size:.7rem;letter-spacing:.2em;color:var(--dim);margin-bottom:.6rem}
+.book__h,.ticket__h,.admin__h{
+  font-family:var(--display);font-weight:400;text-transform:uppercase;
+  font-size:clamp(2.4rem,12vw,4.5rem);line-height:.88;margin-bottom:.6rem;
+}
+.book__lede{color:var(--dim);margin-bottom:2rem;max-width:42ch}
+.book__wait{color:var(--dim);letter-spacing:.1em}
+.book__bad{color:var(--accent);font-size:.85rem;letter-spacing:.04em;margin:.6rem 0}
+.book__hint{font-size:.75rem;color:var(--dim);margin-top:.6rem;line-height:1.5}
+
+/* --- booking form ---------------------------------------------------------- */
+.book{display:flex;flex-direction:column;gap:1.8rem}
+.book__group{border:0;padding:0;margin:0;min-width:0}
+.book__group[disabled]{opacity:.55}
+.book__legend{font-size:.68rem;letter-spacing:.22em;color:var(--dim);margin-bottom:.7rem;padding:0}
+
+.choice{
+  display:grid;grid-template-columns:auto 1fr auto;gap:.2rem .8rem;align-items:center;
+  border:1px solid var(--line);padding:.85rem 1rem;margin-bottom:.5rem;cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.choice.is-on{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent)}
+.choice input{accent-color:var(--accent);width:1.1rem;height:1.1rem;margin:0}
+.choice__name{font-family:var(--display);font-size:1.25rem;text-transform:uppercase;line-height:1.1}
+.choice__price{font-family:var(--display);font-size:1.25rem}
+.choice__left{grid-column:2 / -1;font-size:.7rem;letter-spacing:.14em;color:var(--dim)}
+
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line)}
+.stepper button{width:3.2rem;height:3.2rem;font-size:1.4rem;line-height:1;color:var(--paper)}
+.stepper button:active{background:var(--accent);color:var(--accent-ink)}
+.stepper__value{
+  min-width:3.4rem;text-align:center;font-family:var(--display);font-size:1.6rem;
+  border-inline:1px solid var(--line);line-height:3.2rem;
+}
+
+.field{display:block;margin-bottom:.9rem}
+.field > span{display:block;font-size:.68rem;letter-spacing:.18em;color:var(--dim);margin-bottom:.35rem}
+.field input{
+  font:inherit;width:100%;padding:.85rem .9rem;color:var(--paper);
+  background:rgba(255,246,234,.04);border:1px solid var(--line);
+}
+.field input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-color:var(--accent)}
+
+.book__total{
+  display:flex;justify-content:space-between;align-items:baseline;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:1rem 0;
+  font-size:.7rem;letter-spacing:.2em;color:var(--dim);
+}
+.book__total strong{font-family:var(--display);font-size:2rem;color:var(--paper);letter-spacing:0}
+
+/* --- the ticket ------------------------------------------------------------ */
+.ticket{border:1px solid var(--line);padding:1.4rem;text-align:center;position:relative}
+.ticket::before,.ticket::after{
+  content:'';position:absolute;top:calc(50% - 12px);width:24px;height:24px;border-radius:50%;
+  background:var(--black);border:1px solid var(--line);
+}
+.ticket::before{left:-13px}
+.ticket::after{right:-13px}
+.ticket__eyebrow{font-size:.7rem;letter-spacing:.24em;color:var(--accent);margin-bottom:.7rem}
+.ticket__sub{font-size:.8rem;letter-spacing:.1em;color:var(--dim);margin-bottom:1.4rem}
+.ticket__qr{width:min(15rem,72vw);height:auto;margin:0 auto;image-rendering:pixelated;
+  border:6px solid var(--paper);background:var(--paper)}
+.ticket__qr--wait{aspect-ratio:1;background:rgba(255,246,234,.06);border-color:transparent}
+.ticket__ref{font-family:var(--display);font-size:clamp(1.8rem,9vw,2.8rem);letter-spacing:.04em;margin-top:1rem}
+.ticket__hint{font-size:.72rem;color:var(--dim);margin-bottom:1.4rem}
+.ticket__facts{text-align:left;border-top:1px solid var(--line)}
+.ticket__facts > div{display:flex;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.ticket__facts dt{flex:0 0 5rem;font-size:.65rem;letter-spacing:.16em;color:var(--dim);padding-top:.2rem}
+.ticket__facts dd{margin:0;font-size:.95rem}
+.ticket__actions{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-top:1.2rem}
+.ticket__warn{margin-top:1rem;font-size:.8rem;color:var(--accent)}
+
+/* --- the door (admin) ------------------------------------------------------ */
+.admin .page__body{max-width:64rem;padding-top:2rem}
+.admin__top{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.admin__h2{font-family:var(--display);font-size:1.5rem;text-transform:uppercase;margin-bottom:.8rem}
+.admin__section{margin-top:2.6rem}
+.admin__notice{
+  margin:1rem 0;padding:.7rem .9rem;border-left:3px solid var(--accent);
+  background:rgba(255,246,234,.05);font-size:.85rem;
+}
+.admin__login{max-width:22rem;margin-top:1.5rem}
+.admin__back{display:inline-block;margin-top:2.5rem;font-size:.75rem;letter-spacing:.14em;color:var(--dim)}
+.admin__hint{font-size:.72rem;color:var(--dim);margin-top:.8rem;max-width:46ch}
+
+.admin__checkin{
+  display:flex;gap:.6rem;align-items:flex-end;flex-wrap:wrap;
+  border:1px solid var(--accent);padding:1rem;margin-top:1.6rem;
+}
+.admin__checkin .field{flex:1 1 14rem;margin:0}
+.admin__checkin input{font-family:var(--display);font-size:1.4rem;letter-spacing:.06em}
+
+.admin__parties{border-top:1px solid var(--line)}
+.admin__parties li{display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--line);padding:.5rem 0}
+.admin__parties li.is-on{background:rgba(255,246,234,.04)}
+.admin__parties li > button:first-child{
+  flex:1;display:flex;align-items:center;gap:.7rem;text-align:left;padding:.4rem 0;flex-wrap:wrap;
+}
+.admin__pname{font-family:var(--display);font-size:1.1rem;text-transform:uppercase}
+.admin__pdate{font-size:.7rem;letter-spacing:.1em;color:var(--dim);margin-left:auto}
+.tag{font-size:.6rem;letter-spacing:.16em;padding:.2rem .45rem;border:1px solid var(--line);text-transform:uppercase}
+.tag--live{border-color:var(--accent);color:var(--accent)}
+.tag--draft{color:var(--dim)}
+.tag--past{color:var(--dim);opacity:.6}
+
+.admin__stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-bottom:1.4rem}
+.stat{border:1px solid var(--line);padding:.8rem}
+.stat__label{display:block;font-size:.6rem;letter-spacing:.18em;color:var(--dim)}
+.stat__value{display:block;font-family:var(--display);font-size:1.7rem;margin-top:.2rem}
+
+.admin__tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.admin__table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:38rem}
+.admin__table th{
+  text-align:left;font-size:.6rem;letter-spacing:.16em;color:var(--dim);font-weight:400;
+  padding:.5rem .6rem .5rem 0;border-bottom:1px solid var(--line);
+}
+.admin__table td{padding:.7rem .6rem .7rem 0;border-bottom:1px solid var(--line);vertical-align:top}
+.admin__table tr.is-off{opacity:.4;text-decoration:line-through}
+.mono{font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.dim{color:var(--dim);font-size:.75rem}
+
+@media (min-width:700px){
+  .admin__stats{grid-template-columns:repeat(4,1fr)}
+  .ticket{padding:2rem}
+}

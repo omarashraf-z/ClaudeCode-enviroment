@@ -1,0 +1,21 @@
+{
+  "name": "gummybears",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Gummybears — one party at a time. React front end, Express + SQLite booking back end.",
+  "workspaces": ["apps/api", "apps/web"],
+  "scripts": {
+    "dev": "concurrently -n api,web -c magenta,cyan \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run dev -w @gummybears/api",
+    "dev:web": "npm run dev -w @gummybears/web",
+    "build": "npm run build -w @gummybears/api && npm run build -w @gummybears/web",
+    "start": "npm run start -w @gummybears/api",
+    "seed": "npm run seed -w @gummybears/api",
+    "test": "npm run test -w @gummybears/api",
+    "typecheck": "npm run typecheck -w @gummybears/api && npm run typecheck -w @gummybears/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": { "node": ">=20.11" }
+}

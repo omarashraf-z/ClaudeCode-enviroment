@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.local
+.env
+.env.*
+!.env.example
+
+# The SQLite database and its write-ahead log — real bookings live here.
+apps/api/data/
+*.db
+*.db-wal
+*.db-shm
+
+.DS_Store
+*.log
+*.tsbuildinfo
