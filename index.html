@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>GUMMYBEARS — one party at a time</title>
+<meta name="description" content="Gummybears throws one party at a time. Here it is. When it's gone, it's gone.">
+<meta name="theme-color" content="#0b0709">
+<meta name="color-scheme" content="dark">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="GUMMYBEARS — one party at a time">
+<meta property="og:description" content="One party. One night. Then it's gone.">
+<meta property="og:image" content="assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/favicon.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+<div class="grain" aria-hidden="true"></div>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar" id="bar">
+  <a class="bar__logo" href="#top">GUMMYBEARS</a>
+  <p class="bar__motto" aria-hidden="true">ONE PARTY AT A TIME</p>
+  <a class="bar__cta" href="#tickets" data-gb="barCta">TICKETS</a>
+</header>
+
+<main id="main">
+
+  <!-- ═══════════════ THE PARTY ═══════════════ -->
+  <section class="hero" id="top">
+    <div class="hero__inner">
+
+      <p class="hero__eyebrow">
+        <span class="pill" data-gb="status"><span class="pill__dot"></span><span data-gb="statusText">ON SALE</span></span>
+        <span class="hero__vol" data-gb="volume">VOL. 08</span>
+      </p>
+
+      <h1 class="hero__title" data-gb="name">RED 40</h1>
+      <p class="hero__subtitle" data-gb="subtitle">Artificial colour. Real damage.</p>
+
+      <dl class="facts">
+        <div class="facts__row"><dt>DATE</dt><dd data-gb="dateLine">SAT 26 SEP 2026</dd></div>
+        <div class="facts__row"><dt>DOORS</dt><dd data-gb="timeLine">23:00 – 07:00</dd></div>
+        <div class="facts__row"><dt>WHERE</dt><dd data-gb="venueLine">THE COLD STORE · Neukölln, Berlin</dd></div>
+      </dl>
+
+      <p class="countdown__cap" id="cd-cap">DOORS IN</p>
+      <div class="countdown" id="countdown" role="timer" aria-hidden="true">
+        <div class="countdown__unit"><span class="countdown__num" data-cd="d">00</span><span class="countdown__lab">days</span></div>
+        <div class="countdown__unit"><span class="countdown__num" data-cd="h">00</span><span class="countdown__lab">hrs</span></div>
+        <div class="countdown__unit"><span class="countdown__num" data-cd="m">00</span><span class="countdown__lab">min</span></div>
+        <div class="countdown__unit"><span class="countdown__num" data-cd="s">00</span><span class="countdown__lab">sec</span></div>
+      </div>
+      <p class="sr-only" id="countdown-text" aria-live="polite"></p>
+
+      <div class="hero__cta">
+        <a class="btn btn--big" id="ticket-btn" href="#tickets">GET IN</a>
+        <button class="btn btn--ghost" id="ics-btn" type="button">ADD TO CALENDAR</button>
+      </div>
+
+      <p class="hero__left" id="left-note" hidden></p>
+    </div>
+
+    <div class="scroll-hint" aria-hidden="true">↓</div>
+  </section>
+
+  <div class="ticker" aria-hidden="true"><div class="ticker__track" id="ticker"></div></div>
+
+  <!-- ═══════════════ LINEUP ═══════════════ -->
+  <section class="sec" id="lineup">
+    <h2 class="sec__h">THE NIGHT</h2>
+    <ol class="lineup" id="lineup-list"></ol>
+  </section>
+
+  <!-- ═══════════════ TICKETS ═══════════════ -->
+  <section class="sec sec--invert" id="tickets">
+    <h2 class="sec__h">TICKETS</h2>
+    <p class="sec__lede" data-gb="capacityLine"></p>
+    <ul class="tiers" id="tier-list"></ul>
+    <a class="btn btn--big btn--full" id="buy-btn" href="#" rel="noopener">GET IN</a>
+    <p class="fineprint">Tickets are per person and non-transferable at the door. If it sells out, it sells out — we don’t add capacity.</p>
+  </section>
+
+  <!-- ═══════════════ INFO ═══════════════ -->
+  <section class="sec" id="info">
+    <h2 class="sec__h">WHERE &amp; HOW</h2>
+
+    <div class="venue">
+      <p class="venue__name" data-gb="venueName">THE COLD STORE</p>
+      <p class="venue__addr" data-gb="venueAddress">Sonnenallee 217, 12059 Berlin</p>
+      <p class="venue__note" data-gb="venueNote"></p>
+      <div class="venue__actions">
+        <a class="btn btn--ghost btn--sm" id="map-btn" href="#" target="_blank" rel="noopener">OPEN IN MAPS</a>
+        <button class="btn btn--ghost btn--sm" id="copy-btn" type="button">COPY ADDRESS</button>
+      </div>
+    </div>
+
+    <h3 class="sub__h">HOUSE RULES</h3>
+    <ul class="rules" id="rules-list"></ul>
+  </section>
+
+  <!-- ═══════════════ THE RULE ═══════════════ -->
+  <section class="sec creed" id="creed">
+    <p class="creed__big">ONE PARTY.<br>ONE NIGHT.<br>THEN IT’S GONE.</p>
+    <p class="creed__body" data-gb="creed"></p>
+  </section>
+
+  <div class="ticker ticker--rev" aria-hidden="true"><div class="ticker__track" id="ticker2"></div></div>
+
+  <!-- ═══════════════ ARCHIVE ═══════════════ -->
+  <section class="sec" id="archive">
+    <h2 class="sec__h">GONE</h2>
+    <p class="sec__lede">Everything we’ve already done. You can’t get into any of it.</p>
+    <ul class="archive" id="archive-list"></ul>
+  </section>
+
+  <!-- ═══════════════ THE LIST ═══════════════ -->
+  <section class="sec sec--invert" id="list">
+    <h2 class="sec__h">THE LIST</h2>
+    <p class="sec__lede" data-gb="listBlurb"></p>
+    <form class="signup" id="signup" novalidate>
+      <label class="sr-only" for="email">Email address</label>
+      <input class="signup__input" id="email" name="email" type="email" inputmode="email"
+             autocomplete="email" placeholder="you@wherever.com" required>
+      <button class="btn btn--big" type="submit">NOTIFY ME ONCE</button>
+      <p class="signup__msg" id="signup-msg" role="status"></p>
+    </form>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <p class="foot__mark">GUMMYBEARS</p>
+  <nav class="foot__links">
+    <a id="ig-link" href="#" target="_blank" rel="noopener">INSTAGRAM</a>
+    <a id="mail-link" href="#">EMAIL</a>
+    <button class="linkish" id="share-btn" type="button">SHARE</button>
+  </nav>
+  <p class="foot__note">No cookies. No tracking. No newsletter you didn’t ask for.</p>
+</footer>
+
+<noscript>
+  <p class="noscript">This page needs JavaScript for the countdown and the live ticket count. Everything you actually need — date, place, time — is above.</p>
+</noscript>
+
+<script src="js/content.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
