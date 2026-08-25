@@ -1,8 +1,10 @@
 /* ============================================================================
    GUMMYBEARS — content.ts
    ----------------------------------------------------------------------------
-   The whole site reads from this file. It is the only file you edit between
-   parties. No database, no admin panel: change it, push, done.
+   Site-wide settings that rarely change: the brand, how people pay, and the
+   booking limit. The party itself (name, date, venue, tickets, rules) and
+   the archive list are no longer here — they live in Supabase and are
+   edited live from /admin. See src/lib/partyData.ts.
    ========================================================================== */
 
 export interface TicketType {
@@ -39,7 +41,6 @@ export interface Party {
   };
   capacity: number;
   tickets: TicketType[];
-  lineup?: { time: string; name: string; note?: string; headline?: boolean }[];
   rules?: string[];
 }
 
@@ -53,12 +54,6 @@ export const SITE = {
     /** Optional. Leave '' to hide the WhatsApp link. */
     whatsapp: ''
   },
-
-  /* ── The reservation desk ────────────────────────────────────────────────
-     The Google Apps Script web app. See google-apps-script/README.md. */
-  reservationEndpoint:
-    (import.meta.env.VITE_RESERVATION_ENDPOINT as string | undefined) ||
-    'https://script.google.com/macros/s/AKfycbwGBcEOS4cWalPALpqEaRVCsY3ldBDzfUmZv4UsLKc24Gr_EdLcWgE-Usw6eCYGJWM8/exec',
 
   /* ── How people pay ──────────────────────────────────────────────────── */
   payment: {
@@ -74,48 +69,8 @@ export const SITE = {
     note: 'Your spot is held once we check the transfer. If something is wrong with it we will message you.'
   },
 
-  /** Where the real site lives. Only used by the preview notice. */
-  liveUrl: 'https://omarashraf-z.github.io/ClaudeCode-enviroment/',
-
   /** How many tickets one person can reserve at once. */
-  maxPerReservation: 4,
-
-  /* ── THE PARTY. Set to null when there isn't one. ─────────────────────── */
-  party: {
-    name: 'PEGAJOSA YACHT PARTY',
-    subtitle: '',
-    accent: '#ff2d3f',
-    accentInk: '#12060a',
-    startsAt: '2026-09-03T21:00:00+03:00',
-    endsAt: '2026-09-04T02:00:00+03:00',
-    dateLine: 'THU 3 SEP 2026',
-    timeLine: '21:00 – 02:00',
-    venue: {
-      name: 'ZAMALEK',
-      area: 'Cairo',
-      address: '',
-      mapUrl: '',
-      secret: false,
-      note: ''
-    },
-    capacity: 100,
-    tickets: [
-      { name: 'REGULAR', price: 1000, quantity: 100 }
-    ],
-    lineup: [],
-    rules: [
-      'No tickets on the door.',
-      '18+.',
-      'BYOB.'
-    ]
-  } as Party | null,
-
-  /** Everything already done. Newest first. */
-  archive: [
-    { name: 'TEDDY PENTHOUSE PARTY' },
-    { name: 'EID EVE' },
-    { name: 'THE GUMMY BEAR HOUSE PARTY SERIES' }
-  ] as { name: string; dateLine?: string; venue?: string }[]
+  maxPerReservation: 4
 };
 
 export const money = (amount: number, currency = SITE.payment.currency) =>

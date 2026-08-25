@@ -2,15 +2,31 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SITE, money } from '../content';
 import { Grain, TopBar } from '../components/Chrome';
+import { AuthGate } from '../components/AuthGate';
 import { useAccent } from '../hooks/useTheme';
 import { usePartyState } from '../hooks/useCountdown';
+import { usePartyData } from '../lib/partyData';
+import { useAuth } from '../lib/auth';
 import { ReservationError, fetchTaken, submitReservation } from '../reserve';
 
 export default function ReservePage() {
-  const party = SITE.party;
+  const { party, loading } = usePartyData();
   const state = usePartyState(party);
   useAccent(party?.accent, party?.accentInk);
 
+  if (loading) return <Shell><p className="book__lede">Loading…</p></Shell>;
+
+  return (
+    <Shell>
+      <AuthGate title="RESERVE A SPOT" lede="Create an account (or log in) to book a ticket.">
+        <Booking party={party} state={state} />
+      </AuthGate>
+    </Shell>
+  );
+}
+
+function Booking({ party, state }: { party: ReturnType<typeof usePartyData>['party']; state: ReturnType<typeof usePartyState> }) {
+  const { user } = useAuth();
   const [taken, setTaken] = useState<Record<string, number> | null>(null);
   useEffect(() => {
     if (!party) return;
@@ -36,20 +52,15 @@ export default function ReservePage() {
   const [email, setEmail] = useState('');
   const [note, setNote] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
-  const [hp, setHp] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  /* What was actually submitted, captured at send time. Reading live state
-     on the confirmation screen let a stale default show the wrong ticket. */
   const [done, setDone] = useState<
-    { ref: string | null; simulated: boolean; ticket: string; quantity: number; name: string; email: string } | null
+    { ref: string; ticket: string; quantity: number; name: string; email: string } | null
   >(null);
   const [copied, setCopied] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  /* Pick a default, and drop the selection if the counts arrive and reveal
-     that the chosen type is already gone. */
   useEffect(() => {
     if (!sellable.length) return;
     const stillThere = sellable.some((option) => option.name === ticketName);
@@ -68,51 +79,42 @@ export default function ReservePage() {
 
   if (!party || state === 'over') {
     return (
-      <Shell>
+      <>
         <h1 className="book__h">NOTHING TO BOOK</h1>
         <p className="book__lede">There is no party taking reservations right now.</p>
         <Link className="btn btn--big" to="/">BACK TO THE FRONT</Link>
-      </Shell>
+      </>
     );
   }
 
   if (!sellable.length) {
     return (
-      <Shell>
+      <>
         <h1 className="book__h">SOLD OUT</h1>
         <p className="book__lede">
           Every ticket for {party.name} is spoken for. There is no waiting list.
         </p>
         <Link className="btn btn--big" to="/">BACK TO THE FRONT</Link>
-      </Shell>
+      </>
     );
   }
 
   if (done) {
     return (
-      <Shell>
-        <div className="sent">
-          {done.simulated ? (
-            <p className="sent__warn sent__warn--loud" role="alert">
-              NOT SENT — this build has no reservation desk connected, so nothing
-              reached anybody. Everything below is what a real guest would see.
-            </p>
-          ) : null}
-          <p className="sent__tick" aria-hidden="true">✓</p>
-          <h1 className="book__h">GOT IT</h1>
-          <p className="sent__lede">
-            We’ll confirm your reservation soon. We check every transfer by hand, so give us a
-            little time — you’ll get an email the moment your spot is confirmed.
-          </p>
-          {done.ref ? <p className="sent__ref">{done.ref}</p> : null}
-          <dl className="sent__facts">
-            <div><dt>NAME</dt><dd>{done.name}</dd></div>
-            <div><dt>TICKETS</dt><dd>{done.quantity} × {done.ticket}</dd></div>
-            <div><dt>EMAIL</dt><dd>{done.email}</dd></div>
-          </dl>
-          <Link className="btn btn--ghost" to="/">BACK TO THE FRONT</Link>
-        </div>
-      </Shell>
+      <div className="sent">
+        <p className="sent__tick" aria-hidden="true">✓</p>
+        <h1 className="book__h">GOT IT</h1>
+        <p className="sent__lede">
+          We'll confirm your reservation soon. Once it's checked, it'll show up on My Tickets.
+        </p>
+        <p className="sent__ref">{done.ref}</p>
+        <dl className="sent__facts">
+          <div><dt>NAME</dt><dd>{done.name}</dd></div>
+          <div><dt>TICKETS</dt><dd>{done.quantity} × {done.ticket}</dd></div>
+          <div><dt>EMAIL</dt><dd>{done.email}</dd></div>
+        </dl>
+        <Link className="btn btn--ghost" to="/my-tickets">MY TICKETS</Link>
+      </div>
     );
   }
 
@@ -130,23 +132,26 @@ export default function ReservePage() {
       fileInput.current?.focus();
       return;
     }
+    if (!user) return;
 
     setBusy(true);
     try {
-      const result = await submitReservation({
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-        quantity: count,
-        ticket: ticket.name,
-        amount: total,
-        note: note.trim(),
-        party: party!.name,
-        receipt,
-        hp
-      });
+      const result = await submitReservation(
+        {
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          quantity: count,
+          ticket: ticket.name,
+          amount: total,
+          note: note.trim(),
+          party: party!.name,
+          receipt
+        },
+        user.id
+      );
       setDone({
-        ...result,
+        ref: result.ref,
         ticket: ticket.name,
         quantity: count,
         name: name.trim(),
@@ -155,14 +160,14 @@ export default function ReservePage() {
       window.scrollTo(0, 0);
     } catch (thrown) {
       setProblem(
-        thrown instanceof ReservationError ? thrown.message : 'That didn’t go through. Try again.'
+        thrown instanceof ReservationError ? thrown.message : "That didn't go through. Try again."
       );
       setBusy(false);
     }
   }
 
   return (
-    <Shell>
+    <>
       <p className="book__eyebrow">{party.dateLine}</p>
       <h1 className="book__h">{party.name}</h1>
       <p className="book__lede">
@@ -172,8 +177,6 @@ export default function ReservePage() {
       <form className="book" onSubmit={submit}>
         <fieldset className="book__group" disabled={busy}>
           <legend className="book__legend">TICKET</legend>
-          {/* With a single type there is nothing to choose — show it, don't
-              ask about it. */}
           {sellable.length === 1 ? (
             <p className="choice choice--only">
               <span className="choice__name">{ticket.name}</span>
@@ -208,8 +211,6 @@ export default function ReservePage() {
           <p className="book__hint">Up to {max} per person.</p>
         </fieldset>
 
-        {/* The money. Everything above decides the number; this is where they
-            are told exactly what to send and where. */}
         <section className="pay">
           <p className="pay__label">SEND EXACTLY</p>
           <p className="pay__total">{money(total)}</p>
@@ -279,16 +280,6 @@ export default function ReservePage() {
           </label>
         </fieldset>
 
-        {/* Honeypot: off-screen, not announced, no autofill. */}
-        <input
-          className="sr-only"
-          tabIndex={-1}
-          autoComplete="off"
-          aria-hidden="true"
-          value={hp}
-          onChange={(event) => setHp(event.target.value)}
-        />
-
         {problem ? <p className="book__bad" role="alert">{problem}</p> : null}
 
         <button className="btn btn--big btn--full" type="submit" disabled={busy}>
@@ -296,7 +287,7 @@ export default function ReservePage() {
         </button>
         <p className="book__hint">{SITE.payment.note}</p>
       </form>
-    </Shell>
+    </>
   );
 }
 

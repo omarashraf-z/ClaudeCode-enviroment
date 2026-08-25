@@ -1,12 +1,11 @@
 /**
- * Sending a reservation to the Google Sheet.
- *
- * The whole back end is a Google Apps Script web app (google-apps-script/).
- * We post JSON to it as text/plain on purpose: that counts as a "simple"
- * request, so the browser skips the CORS preflight that Apps Script cannot
- * answer. It is a real POST either way.
+ * The reservation desk — now backed by Supabase (see supabase/schema.sql)
+ * instead of the old Google Sheet. A reservation always belongs to a
+ * signed-in account: the row it lands in records who submitted it, and the
+ * admin panel's accept/reject decision is what makes it show up on that
+ * account's "My tickets" page.
  */
-import { SITE } from './content';
+import { supabase } from './lib/supabaseClient';
 
 export interface ReservationInput {
   name: string;
@@ -18,14 +17,11 @@ export interface ReservationInput {
   note: string;
   party: string;
   receipt: File;
-  /** Honeypot. Real people never fill this in; bots fill in everything. */
-  hp: string;
 }
 
 export interface ReservationResult {
-  ref: string | null;
-  /** true when no endpoint is configured, so nothing was actually sent. */
-  simulated: boolean;
+  ref: string;
+  simulated: false;
 }
 
 export class ReservationError extends Error {}
@@ -35,95 +31,117 @@ export class ReservationError extends Error {}
 const MAX_EDGE = 1600;
 const MAX_BYTES = 8 * 1024 * 1024;
 
-async function toBase64Payload(file: File): Promise<{ data: string; type: string }> {
-  const shrunk = await shrink(file);
-  const source = shrunk ?? file;
-
-  if (source.size > MAX_BYTES) {
-    throw new ReservationError('That image is too big — try a screenshot instead of a photo.');
-  }
-
-  const buffer = await source.arrayBuffer();
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  }
-  return { data: btoa(binary), type: source.type || file.type || 'image/jpeg' };
-}
-
-/** Returns null when the browser cannot decode the image (an HEIC photo, say)
- *  — then we send the original bytes and let Drive deal with it. */
-async function shrink(file: File): Promise<Blob | null> {
+/** Returns the original file when the browser cannot decode it (an HEIC
+ *  photo, say) or it is already small — then we upload the original bytes. */
+async function shrink(file: File): Promise<File> {
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
     if (scale === 1 && file.size < 1_500_000) {
       bitmap.close();
-      return null;
+      return file;
     }
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(bitmap.width * scale);
     canvas.height = Math.round(bitmap.height * scale);
     const context = canvas.getContext('2d');
-    if (!context) return null;
+    if (!context) return file;
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
 
-    return await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.82)
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.82)
     );
+    return blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file;
   } catch {
-    return null;
+    return file;
   }
 }
 
-export async function submitReservation(input: ReservationInput): Promise<ReservationResult> {
-  const receipt = await toBase64Payload(input.receipt);
-
-  if (!SITE.reservationEndpoint) {
-    /* No desk wired up yet. Say so rather than faking a reservation. */
-    return { ref: null, simulated: true };
+export async function submitReservation(
+  input: ReservationInput,
+  userId: string
+): Promise<ReservationResult> {
+  const receipt = await shrink(input.receipt);
+  if (receipt.size > MAX_BYTES) {
+    throw new ReservationError('That image is too big — try a screenshot instead of a photo.');
   }
 
-  let response: Response;
-  try {
-    response = await fetch(SITE.reservationEndpoint, {
-      method: 'POST',
-      /* text/plain keeps this a simple request — see the note at the top. */
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ ...input, receipt, receiptName: input.receipt.name })
-    });
-  } catch {
-    throw new ReservationError('Could not reach us. Check your connection and try again.');
+  const extension = (receipt.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+
+  const upload = await supabase.storage.from('receipts').upload(path, receipt, {
+    contentType: receipt.type || 'image/jpeg'
+  });
+  if (upload.error) {
+    throw new ReservationError('Could not upload the screenshot. Check your connection and try again.');
   }
 
-  let payload: { ok?: boolean; ref?: string; error?: string };
-  try {
-    payload = (await response.json()) as typeof payload;
-  } catch {
-    throw new ReservationError('We could not read the reply. Message us on Instagram before trying again.');
+  const { data, error } = await supabase
+    .from('reservations')
+    .insert({
+      user_id: userId,
+      party_name: input.party,
+      ticket: input.ticket,
+      quantity: input.quantity,
+      amount: input.amount,
+      name: input.name,
+      phone: input.phone,
+      email: input.email,
+      note: input.note,
+      receipt_path: path
+    })
+    .select('id')
+    .single();
+
+  if (error || !data) {
+    throw new ReservationError('That did not go through. Try again.');
   }
 
-  if (!payload.ok) throw new ReservationError(payload.error ?? 'That did not go through.');
-  return { ref: payload.ref ?? null, simulated: false };
+  return { ref: String(data.id).slice(0, 8).toUpperCase(), simulated: false };
 }
 
-/** How many of each ticket type are already spoken for, for THIS party only —
- *  the sheet keeps every party's rows. Best effort: if the desk is
- *  unreachable the site simply doesn't show a counter. */
+/** How many of each ticket type are already spoken for, for THIS party only
+ *  — pending and confirmed both hold a spot; only a rejection frees it. */
 export async function fetchTaken(party: string): Promise<Record<string, number> | null> {
-  if (!SITE.reservationEndpoint) return null;
-  try {
-    const url =
-      SITE.reservationEndpoint +
-      (SITE.reservationEndpoint.includes('?') ? '&' : '?') +
-      'party=' + encodeURIComponent(party);
-    const response = await fetch(url, { method: 'GET' });
-    const payload = (await response.json()) as { ok?: boolean; taken?: Record<string, number> };
-    return payload.ok && payload.taken ? payload.taken : null;
-  } catch {
-    return null;
+  const { data, error } = await supabase
+    .from('reservations')
+    .select('ticket, quantity')
+    .eq('party_name', party)
+    .neq('status', 'rejected');
+  if (error || !data) return null;
+
+  const taken: Record<string, number> = {};
+  for (const row of data) {
+    taken[row.ticket] = (taken[row.ticket] ?? 0) + row.quantity;
   }
+  return taken;
+}
+
+export interface MyReservation {
+  id: string;
+  partyName: string;
+  ticket: string;
+  quantity: number;
+  amount: number;
+  status: 'pending' | 'confirmed' | 'rejected';
+  createdAt: string;
+}
+
+export async function fetchMyReservations(userId: string): Promise<MyReservation[]> {
+  const { data, error } = await supabase
+    .from('reservations')
+    .select('id, party_name, ticket, quantity, amount, status, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id,
+    partyName: row.party_name,
+    ticket: row.ticket,
+    quantity: row.quantity,
+    amount: row.amount,
+    status: row.status,
+    createdAt: row.created_at
+  }));
 }

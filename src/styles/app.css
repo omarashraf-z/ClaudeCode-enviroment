@@ -212,15 +212,40 @@
   font-size:.85rem;line-height:1.5;text-align:left;margin:0 0 1.6rem;padding:.9rem 1rem;
 }
 
-/* Only ever rendered when no reservation desk is configured. */
-.preview-notice{
-  position:sticky;top:0;z-index:80;margin:0;
-  background:var(--accent);color:var(--accent-ink);
-  padding:.5rem var(--pad);font-size:.7rem;letter-spacing:.06em;text-align:center;
-}
-.preview-notice a{color:inherit}
-
 /* A single ticket type: same block, nothing to click. */
 .choice--only{grid-template-columns:1fr auto;cursor:default;border-color:var(--accent);
   background:color-mix(in srgb, var(--accent) 10%, transparent);margin:0}
 .choice--only .choice__left{grid-column:1 / -1}
+
+/* --- accounts: signup / login ----------------------------------------------- */
+.auth__tabs{display:flex;gap:.4rem;margin-bottom:1.4rem}
+.auth__tab{
+  font:inherit;flex:1;background:none;border:1px solid var(--line);color:var(--dim);cursor:pointer;
+  padding:.6rem .8rem;font-size:.68rem;letter-spacing:.16em;transition:border-color .15s,color .15s;
+}
+.auth__tab.is-on{border-color:var(--accent);color:var(--paper)}
+.auth__form{max-width:28rem}
+
+/* --- admin: reservation queue ------------------------------------------------ */
+.admin__list{display:flex;flex-direction:column;gap:1px;background:var(--line);margin-top:1rem}
+.admin__row{
+  display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between;align-items:flex-start;
+  background:var(--black);padding:1rem;
+}
+.admin__row-main{flex:1 1 16rem;min-width:0}
+.admin__row-name{font-family:var(--display);font-size:1.2rem;text-transform:uppercase;line-height:1.2}
+.admin__row-user{font-family:inherit;font-size:.68rem;letter-spacing:.08em;color:var(--dim);text-transform:none}
+.admin__row-detail{font-size:.78rem;color:var(--dim);margin-top:.2rem;word-break:break-word}
+.admin__row-actions{display:flex;gap:.5rem;flex:0 0 auto}
+.admin__row-actions .btn{padding:.5rem .9rem;font-size:.68rem}
+
+.admin__ticket-row{display:grid;grid-template-columns:1fr 6rem 6rem auto;gap:.5rem;margin-bottom:.6rem;align-items:center}
+.admin__ticket-row input{
+  font:inherit;padding:.6rem .7rem;color:var(--paper);background:rgba(255,246,234,.04);border:1px solid var(--line);
+}
+
+@media (max-width:520px){
+  .admin__ticket-row{grid-template-columns:1fr 1fr}
+  .admin__ticket-row input:first-child{grid-column:1 / -1}
+  .admin__ticket-row button{grid-column:1 / -1}
+}

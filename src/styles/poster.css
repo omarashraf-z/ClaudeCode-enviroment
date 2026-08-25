@@ -68,9 +68,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 }
 .bar.is-stuck{border-bottom-color:var(--line)}
 .bar__logo{font-family:var(--display);font-size:1.05rem;letter-spacing:.06em;text-decoration:none;white-space:nowrap}
-.bar__motto{display:none;font-size:.68rem;letter-spacing:.22em;color:var(--dim)}
+.bar__nav{margin-left:auto;display:flex;align-items:center;gap:1rem}
+.bar__link{
+  font:inherit;background:none;border:0;padding:0;cursor:pointer;
+  font-size:.68rem;letter-spacing:.14em;color:var(--dim);text-decoration:none;white-space:nowrap;
+}
+.bar__link:hover{color:var(--paper)}
 .bar__cta{
-  margin-left:auto;background:var(--accent);color:var(--accent-ink);
+  background:var(--accent);color:var(--accent-ink);
   text-decoration:none;font-size:.72rem;letter-spacing:.14em;font-weight:500;
   padding:.45rem .8rem;white-space:nowrap;
   opacity:0;transform:translateY(-4px);pointer-events:none;transition:opacity .25s, transform .25s;
@@ -260,7 +265,6 @@ body.is-quiet .hero::after{background:var(--line)}
 /* --- bigger screens: same poster, more air -------------------------------- */
 @media (min-width:700px){
   body{font-size:16px}
-  .bar__motto{display:block}
   .hero__eyebrow{font-size:.75rem}
   .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:0 1.5rem;border-top:0}
   .facts__row{flex-direction:column;gap:.35rem;border-top:1px solid var(--line)}

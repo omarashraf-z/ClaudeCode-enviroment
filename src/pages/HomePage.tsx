@@ -7,9 +7,9 @@ import { useAccent } from '../hooks/useTheme';
 import { downloadIcs } from '../ics';
 import { SITE, money, type Party } from '../content';
 import { fetchTaken } from '../reserve';
+import { usePartyData, type ArchiveEntry } from '../lib/partyData';
 
 const TICKER = [
-  'ONE PARTY AT A TIME',
   'NO RESIDENCY',
   'NO SERIES',
   'NO SECOND CHANCE',
@@ -17,17 +17,19 @@ const TICKER = [
 ];
 
 export default function HomePage() {
-  const party = SITE.party;
+  const { party, archive, loading } = usePartyData();
   const state = usePartyState(party);
   useAccent(party?.accent, party?.accentInk);
 
-  /* How many are gone, straight from the reservations sheet. Optional: with
-     no desk configured, or none reachable, the counters simply don't show. */
+  /* How many are gone, straight from the reservations table. Optional: with
+     none reachable, the counters simply don't show. */
   const [taken, setTaken] = useState<Record<string, number> | null>(null);
   useEffect(() => {
     if (!party) return;
     void fetchTaken(party.name).then(setTaken);
   }, [party]);
+
+  if (loading) return null;
 
   const left = party ? remaining(party, taken) : 0;
   const soldOut = party ? left <= 0 && taken !== null : false;
@@ -49,23 +51,6 @@ export default function HomePage() {
 
         {party && state !== 'over' ? (
           <>
-            {party.lineup?.length ? (
-              <section className="sec" id="lineup">
-                <h2 className="sec__h">THE NIGHT</h2>
-                <ol className="lineup">
-                  {party.lineup.map((act) => (
-                    <li className={`lineup__item${act.headline ? ' is-headline' : ''}`} key={`${act.time}-${act.name}`}>
-                      <span className="lineup__time">{act.time}</span>
-                      <div className="lineup__body">
-                        <p className="lineup__name">{act.name}</p>
-                        {act.note ? <p className="lineup__note">{act.note}</p> : null}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            ) : null}
-
             <TicketSection party={party} open={open} taken={taken} />
             <VenueSection party={party} />
           </>
@@ -78,7 +63,7 @@ export default function HomePage() {
         ) : null}
 
         <Ticker words={TICKER} reverse />
-        <ArchiveSection />
+        <ArchiveSection archive={archive} />
       </main>
 
       <SiteFooter />
@@ -304,15 +289,15 @@ function VenueSection({ party }: { party: Party }) {
   );
 }
 
-function ArchiveSection() {
-  if (!SITE.archive.length) return null;
+function ArchiveSection({ archive }: { archive: ArchiveEntry[] }) {
+  if (!archive.length) return null;
   return (
     <section className="sec" id="archive">
       <h2 className="sec__h">GONE</h2>
       <p className="sec__lede">Everything we’ve already done.</p>
       <ul className="archive">
-        {SITE.archive.map((entry) => (
-          <li className="arch" key={entry.name}>
+        {archive.map((entry) => (
+          <li className="arch" key={entry.id}>
             <span className="arch__name">{entry.name}</span>
             {entry.dateLine || entry.venue ? (
               <span className="arch__meta">

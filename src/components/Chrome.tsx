@@ -1,20 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SITE } from '../content';
-
-/** Shown only in builds with no reservation desk wired up (the design
- *  preview). Without it, such a build looks exactly like the real site. */
-export function PreviewNotice() {
-  if (SITE.reservationEndpoint) return null;
-  return (
-    <p className="preview-notice">
-      PREVIEW — reservations are switched off here.{' '}
-      {SITE.liveUrl ? (
-        <>The real site is <a href={SITE.liveUrl}>{SITE.liveUrl.replace(/^https?:\/\//, '')}</a></>
-      ) : null}
-    </p>
-  );
-}
+import { useAuth } from '../lib/auth';
 
 export function Grain() {
   return <div className="grain" aria-hidden="true" />;
@@ -30,9 +17,24 @@ export function TopBar({ cta }: { cta?: { label: string; to: string } | null }) 
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const { user, profile, signOut } = useAuth();
+
   return (
     <header className={`bar${stuck ? ' is-stuck' : ''}`}>
       <Link className="bar__logo" to="/">GUMMYBEARS</Link>
+      <nav className="bar__nav">
+        {user ? (
+          <>
+            <Link className="bar__link" to="/my-tickets">MY TICKETS</Link>
+            {profile?.isAdmin ? <Link className="bar__link" to="/admin">ADMIN</Link> : null}
+            <button className="bar__link bar__link--btn" type="button" onClick={() => void signOut()}>
+              LOG OUT
+            </button>
+          </>
+        ) : (
+          <Link className="bar__link" to="/login">LOG IN</Link>
+        )}
+      </nav>
       {cta ? (
         <Link className="bar__cta" to={cta.to}>{cta.label}</Link>
       ) : null}
