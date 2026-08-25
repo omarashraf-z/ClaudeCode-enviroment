@@ -219,3 +219,8 @@
   padding:.5rem var(--pad);font-size:.7rem;letter-spacing:.06em;text-align:center;
 }
 .preview-notice a{color:inherit}
+
+/* A single ticket type: same block, nothing to click. */
+.choice--only{grid-template-columns:1fr auto;cursor:default;border-color:var(--accent);
+  background:color-mix(in srgb, var(--accent) 10%, transparent);margin:0}
+.choice--only .choice__left{grid-column:1 / -1}

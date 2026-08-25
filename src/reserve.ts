@@ -110,12 +110,17 @@ export async function submitReservation(input: ReservationInput): Promise<Reserv
   return { ref: payload.ref ?? null, simulated: false };
 }
 
-/** How many of each ticket type are already spoken for. Best effort: if the
- *  desk is unreachable the site just doesn't show a counter. */
-export async function fetchTaken(): Promise<Record<string, number> | null> {
+/** How many of each ticket type are already spoken for, for THIS party only —
+ *  the sheet keeps every party's rows. Best effort: if the desk is
+ *  unreachable the site simply doesn't show a counter. */
+export async function fetchTaken(party: string): Promise<Record<string, number> | null> {
   if (!SITE.reservationEndpoint) return null;
   try {
-    const response = await fetch(SITE.reservationEndpoint, { method: 'GET' });
+    const url =
+      SITE.reservationEndpoint +
+      (SITE.reservationEndpoint.includes('?') ? '&' : '?') +
+      'party=' + encodeURIComponent(party);
+    const response = await fetch(url, { method: 'GET' });
     const payload = (await response.json()) as { ok?: boolean; taken?: Record<string, number> };
     return payload.ok && payload.taken ? payload.taken : null;
   } catch {

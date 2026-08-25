@@ -13,8 +13,9 @@ export default function ReservePage() {
 
   const [taken, setTaken] = useState<Record<string, number> | null>(null);
   useEffect(() => {
-    void fetchTaken().then(setTaken);
-  }, []);
+    if (!party) return;
+    void fetchTaken(party.name).then(setTaken);
+  }, [party]);
 
   const sellable = useMemo(
     () =>
@@ -140,7 +141,7 @@ export default function ReservePage() {
         ticket: ticket.name,
         amount: total,
         note: note.trim(),
-        party: `${party!.name} (vol. ${party!.volume})`,
+        party: party!.name,
         receipt,
         hp
       });
@@ -162,16 +163,24 @@ export default function ReservePage() {
 
   return (
     <Shell>
-      <p className="book__eyebrow">VOL. {String(party.volume).padStart(2, '0')} · {party.dateLine}</p>
+      <p className="book__eyebrow">{party.dateLine}</p>
       <h1 className="book__h">{party.name}</h1>
       <p className="book__lede">
-        {party.venue.secret ? 'Secret location' : `${party.venue.name}, ${party.venue.area}`} · {party.timeLine}
+        {party.venue.secret ? 'Secret location' : [party.venue.name, party.venue.area].filter(Boolean).join(', ')} · {party.timeLine}
       </p>
 
       <form className="book" onSubmit={submit}>
         <fieldset className="book__group" disabled={busy}>
           <legend className="book__legend">TICKET</legend>
-          {sellable.map((option) => (
+          {/* With a single type there is nothing to choose — show it, don't
+              ask about it. */}
+          {sellable.length === 1 ? (
+            <p className="choice choice--only">
+              <span className="choice__name">{ticket.name}</span>
+              <span className="choice__price">{money(ticket.price)}</span>
+              {taken ? <span className="choice__left">{ticket.left} left</span> : null}
+            </p>
+          ) : sellable.map((option) => (
             <label className={`choice${option.name === ticket.name ? ' is-on' : ''}`} key={option.name}>
               <input
                 type="radio"

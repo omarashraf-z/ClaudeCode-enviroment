@@ -3,16 +3,13 @@
    ----------------------------------------------------------------------------
    The whole site reads from this file. It is the only file you edit between
    parties. No database, no admin panel: change it, push, done.
-
-   ⚠️  EVERYTHING MARKED "PLACEHOLDER" IS INVENTED and must be replaced with
-       the real thing before you send anyone here.
    ========================================================================== */
 
 export interface TicketType {
-  /** Shown on the poster and in the reservation form. */
   name: string;
+  /** In whatever currency payment.currency says. */
   price: number;
-  /** How many of this type exist. Used for the "x left" counter. */
+  /** How many exist. Drives the "x left" counter and selling out. */
   quantity: number;
   note?: string;
   /** Sold at the door only — shown on the poster, not reservable online. */
@@ -20,14 +17,13 @@ export interface TicketType {
 }
 
 export interface Party {
-  volume: number;
   name: string;
   subtitle?: string;
   /** Drives the entire palette of the site. Any hex colour. */
   accent: string;
   accentInk: string;
   /** ISO 8601 WITH a timezone offset, so the countdown is right everywhere. */
-  doorsAt: string;
+  startsAt: string;
   endsAt: string;
   /** Written the way you'd say it out loud. */
   dateLine: string;
@@ -53,16 +49,14 @@ export const SITE = {
     name: 'GUMMYBEARS',
     motto: 'One party at a time.',
     instagram: 'https://www.instagram.com/thegummybeaars/',
-    email: 'PLACEHOLDER@example.com',      // ← your real address
+    /** Leave '' to hide the email link in the footer. */
+    email: '',
     /** Optional. Leave '' to hide the WhatsApp link. */
     whatsapp: ''
   },
 
   /* ── The reservation desk ────────────────────────────────────────────────
-     Paste the Google Apps Script web app URL here (it ends in /exec).
-     See google-apps-script/README.md — it takes about three minutes.
-     While this is empty the form still works, but nothing is sent: it shows
-     the confirmation screen and says plainly that it was not submitted. */
+     The Google Apps Script web app. See google-apps-script/README.md. */
   reservationEndpoint:
     (import.meta.env.VITE_RESERVATION_ENDPOINT as string | undefined) ||
     'https://script.google.com/macros/s/AKfycbwGBcEOS4cWalPALpqEaRVCsY3ldBDzfUmZv4UsLKc24Gr_EdLcWgE-Usw6eCYGJWM8/exec',
@@ -70,18 +64,14 @@ export const SITE = {
   /* ── How people pay ──────────────────────────────────────────────────── */
   payment: {
     label: 'InstaPay',
-    /** The name that shows up in their transfer app. */
-    accountName: 'PLACEHOLDER — account name',
-    /** Your InstaPay address or number, shown big and copyable. */
-    address: 'PLACEHOLDER@instapay',
+    accountName: 'Omar A***** A**',
+    address: 'omarashraf254@instapay',
     currency: 'EGP',
-    /** Steps shown above the upload field. Keep them short. */
     steps: [
       'Send the exact total shown above, to the account above.',
       'Screenshot the transfer confirmation.',
       'Fill in your details below and attach that screenshot.'
     ],
-    /** Small print under the form. */
     note: 'Your spot is held once we check the transfer. If something is wrong with it we will message you.'
   },
 
@@ -93,40 +83,31 @@ export const SITE = {
 
   /* ── THE PARTY. Set to null when there isn't one. ─────────────────────── */
   party: {
-    volume: 8,
-    name: 'RED 40',                                    // PLACEHOLDER
-    subtitle: 'Artificial colour. Real damage.',       // PLACEHOLDER
+    name: 'PEGAJOSA YACHT PARTY',
+    subtitle: '',
     accent: '#ff2d3f',
     accentInk: '#12060a',
-    doorsAt: '2026-09-26T23:00:00+03:00',              // PLACEHOLDER
-    endsAt: '2026-09-27T05:00:00+03:00',               // PLACEHOLDER
-    dateLine: 'SAT 26 SEP 2026',                       // PLACEHOLDER
-    timeLine: '23:00 – 05:00',                         // PLACEHOLDER
+    startsAt: '2026-09-03T21:00:00+03:00',
+    endsAt: '2026-09-04T02:00:00+03:00',
+    dateLine: 'THU 3 SEP 2026',
+    timeLine: '21:00 – 02:00',
     venue: {
-      name: 'PLACEHOLDER VENUE',
-      area: 'PLACEHOLDER CITY',
-      address: 'PLACEHOLDER street address',
+      name: 'ZAMALEK',
+      area: 'Cairo',
+      address: '',
       mapUrl: '',
       secret: false,
       note: ''
     },
-    capacity: 400,                                     // PLACEHOLDER
+    capacity: 100,
     tickets: [
-      { name: 'EARLY BEAR', price: 400, quantity: 150 },        // PLACEHOLDER
-      { name: 'SECOND WAVE', price: 600, quantity: 150 },       // PLACEHOLDER
-      { name: 'LAST BATCH', price: 800, quantity: 100 },        // PLACEHOLDER
-      { name: 'ON THE DOOR', price: 1000, quantity: 0, doorOnly: true, note: 'if anything is left' }
+      { name: 'REGULAR', price: 1000, quantity: 100 }
     ],
-    lineup: [
-      { time: '23:00', name: 'PLACEHOLDER DJ', note: 'opening' },
-      { time: '01:00', name: 'PLACEHOLDER HEADLINER', headline: true },
-      { time: '03:00', name: 'PLACEHOLDER CLOSER' }
-    ],
+    lineup: [],
     rules: [
-      '18+. Bring ID or don’t bother.',
-      'Cameras off on the floor.',
-      'Racism, harassment, groping: out, permanently, no discussion.',
-      'Water is free, always.'
+      'No tickets on the door.',
+      '18+.',
+      'BYOB.'
     ],
     creed:
       'We throw one party. We put everything into it. Then we stop, and there is nothing to buy, ' +
@@ -136,8 +117,10 @@ export const SITE = {
 
   /** Everything already done. Newest first. */
   archive: [
-    { volume: 7, name: 'PLACEHOLDER', dateLine: 'MAY 2026', venue: 'PLACEHOLDER' }
-  ] as { volume: number; name: string; dateLine: string; venue?: string }[]
+    { name: 'TEDDY PENTHOUSE PARTY' },
+    { name: 'EID EVE' },
+    { name: 'THE GUMMY BEAR HOUSE PARTY SERIES' }
+  ] as { name: string; dateLine?: string; venue?: string }[]
 };
 
 export const money = (amount: number, currency = SITE.payment.currency) =>

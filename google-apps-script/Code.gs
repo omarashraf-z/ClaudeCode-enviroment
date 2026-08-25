@@ -113,10 +113,12 @@ function doPost(e) {
 }
 
 /** The site asks how many are gone, so it can show "x left" and sell out.
- *  Adding ?ping=1 runs a self-test instead — open that URL in a browser when
- *  something is not working and it will say what it can and cannot see. */
+ *  ?party=NAME counts only that party's rows — the sheet keeps every party
+ *  ever run, so without this the next party would start out sold out.
+ *  ?ping=1 runs a self-test instead. */
 function doGet(e) {
   if (e && e.parameter && e.parameter.ping) return ping();
+  const wanted = (e && e.parameter && e.parameter.party) ? String(e.parameter.party) : '';
 
   try {
     const sheet = getSheet();
@@ -127,12 +129,13 @@ function doGet(e) {
     for (let i = 1; i < rows.length; i++) {
       const status = String(rows[i][2] || '').toUpperCase();
       if (status === 'REJECTED') continue;          // freed up again
+      if (wanted && String(rows[i][11] || '') !== wanted) continue;
       const ticket = String(rows[i][6] || '');
       const quantity = Number(rows[i][7]) || 0;
       taken[ticket] = (taken[ticket] || 0) + quantity;
       total += quantity;
     }
-    return json({ ok: true, taken: taken, total: total });
+    return json({ ok: true, party: wanted, taken: taken, total: total });
   } catch (error) {
     console.error(error);
     return json({

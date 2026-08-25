@@ -49,7 +49,7 @@ export function usePartyState(party: Party | null): PartyState {
   const compute = (): PartyState => {
     if (!party) return 'quiet';
     const now = Date.now();
-    if (now < new Date(party.doorsAt).getTime()) return 'upcoming';
+    if (now < new Date(party.startsAt).getTime()) return 'upcoming';
     if (now < new Date(party.endsAt).getTime()) return 'live';
     return 'over';
   };
@@ -61,7 +61,7 @@ export function usePartyState(party: Party | null): PartyState {
     const id = window.setInterval(() => setState(compute()), 1000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [party?.doorsAt, party?.endsAt, party?.volume]);
+  }, [party?.startsAt, party?.endsAt, party?.name]);
 
   return state;
 }

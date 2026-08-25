@@ -25,8 +25,9 @@ export default function HomePage() {
      no desk configured, or none reachable, the counters simply don't show. */
   const [taken, setTaken] = useState<Record<string, number> | null>(null);
   useEffect(() => {
-    void fetchTaken().then(setTaken);
-  }, []);
+    if (!party) return;
+    void fetchTaken(party.name).then(setTaken);
+  }, [party]);
 
   const left = party ? remaining(party, taken) : 0;
   const soldOut = party ? left <= 0 && taken !== null : false;
@@ -95,6 +96,16 @@ function remaining(party: Party, taken: Record<string, number> | null): number {
   return Math.max(0, Math.min(capacity, party.capacity) - gone);
 }
 
+/** The poster is built around one enormous word. A four-word name at the same
+ *  size becomes four stacked lines and pushes the practical details off the
+ *  screen, so the type scales to the longest word in the name. */
+function titleScale(name: string): string {
+  const longest = name.split(/\s+/).reduce((max, word) => Math.max(max, word.length), 0);
+  if (longest <= 6) return 'clamp(4.4rem, 26vw, 16rem)';
+  if (longest <= 9) return 'clamp(3.4rem, 19vw, 12rem)';
+  return 'clamp(2.6rem, 14vw, 9rem)';
+}
+
 function statusLabel(state: PartyState, open: boolean, left: number, showLeft: boolean): string {
   if (state === 'live') return 'HAPPENING NOW';
   if (state === 'over') return 'IT’S OVER';
@@ -116,22 +127,21 @@ function PartyHero({
             <span className="pill__dot" />
             {statusLabel(state, open, left, showLeft)}
           </span>
-          <span className="hero__vol">VOL. {String(party.volume).padStart(2, '0')}</span>
         </p>
 
-        <h1 className="hero__title">{party.name}</h1>
+        <h1 className="hero__title" style={{ fontSize: titleScale(party.name) }}>{party.name}</h1>
         {party.subtitle ? <p className="hero__subtitle">{party.subtitle}</p> : null}
 
         <dl className="facts">
           <div className="facts__row"><dt>DATE</dt><dd>{party.dateLine}</dd></div>
-          <div className="facts__row"><dt>DOORS</dt><dd>{party.timeLine}</dd></div>
+          <div className="facts__row"><dt>TIME</dt><dd>{party.timeLine}</dd></div>
           <div className="facts__row">
             <dt>WHERE</dt>
             <dd>{party.venue.secret ? 'SECRET · sent to confirmed guests' : `${party.venue.name} · ${party.venue.area}`}</dd>
           </div>
         </dl>
 
-        {state === 'upcoming' ? <Countdown target={party.doorsAt} caption="DOORS IN" /> : null}
+        {state === 'upcoming' ? <Countdown target={party.startsAt} caption="STARTS IN" /> : null}
         {state === 'live' ? <Countdown target={party.endsAt} caption="ENDS IN" live /> : null}
 
         <div className="hero__cta">
@@ -146,9 +156,9 @@ function PartyHero({
               type="button"
               onClick={() =>
                 downloadIcs({
-                  uid: `vol${party.volume}`,
+                  uid: party.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                   title: `${SITE.brand.name} — ${party.name}`,
-                  start: party.doorsAt,
+                  start: party.startsAt,
                   end: party.endsAt,
                   location: party.venue.secret
                     ? 'Location sent to confirmed guests'
@@ -255,9 +265,13 @@ function VenueSection({ party }: { party: Party }) {
       <h2 className="sec__h">WHERE &amp; HOW</h2>
       <div className="venue">
         <p className="venue__name">{party.venue.secret ? 'LOCATION TBA' : party.venue.name}</p>
-        <p className="venue__addr">
-          {party.venue.secret ? 'Sent to confirmed guests before the night.' : party.venue.address}
-        </p>
+        {party.venue.secret ? (
+          <p className="venue__addr">Sent to confirmed guests before the night.</p>
+        ) : party.venue.address ? (
+          <p className="venue__addr">{party.venue.address}</p>
+        ) : (
+          <p className="venue__addr">{party.venue.area}</p>
+        )}
         {party.venue.note ? <p className="venue__note">{party.venue.note}</p> : null}
 
         {!party.venue.secret && party.venue.address ? (
@@ -303,10 +317,13 @@ function ArchiveSection() {
       <p className="sec__lede">Everything we’ve already done. You can’t get into any of it.</p>
       <ul className="archive">
         {SITE.archive.map((entry) => (
-          <li className="arch" key={entry.volume}>
-            <span className="arch__vol">V{String(entry.volume).padStart(2, '0')}</span>
+          <li className="arch" key={entry.name}>
             <span className="arch__name">{entry.name}</span>
-            <span className="arch__meta">{entry.dateLine}{entry.venue ? ` · ${entry.venue}` : ''}</span>
+            {entry.dateLine || entry.venue ? (
+              <span className="arch__meta">
+                {[entry.dateLine, entry.venue].filter(Boolean).join(' · ')}
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>

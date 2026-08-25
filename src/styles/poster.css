@@ -109,7 +109,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   line-height:.82;letter-spacing:-.015em;text-transform:uppercase;
   margin:0 0 1rem;
   text-shadow:.055em .055em 0 var(--accent);
-  word-break:break-word;
+  word-break:normal;overflow-wrap:break-word;text-wrap:balance;
 }
 .hero__subtitle{font-size:clamp(1rem,4.5vw,1.6rem);line-height:1.25;max-width:22ch;margin-bottom:2rem}
 
@@ -221,12 +221,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* --- archive -------------------------------------------------------------- */
 .archive{border-top:1px solid var(--line)}
-.arch{display:grid;grid-template-columns:2.4rem 1fr;gap:.15rem .7rem;
+.arch{display:grid;grid-template-columns:1fr;gap:.15rem .7rem;
   padding:.85rem 0;border-bottom:1px solid var(--line);color:var(--dim)}
-.arch__vol{font-size:.7rem;letter-spacing:.12em;padding-top:.35rem}
 .arch__name{font-family:var(--display);font-size:1.25rem;line-height:1.05;text-transform:uppercase;
   color:var(--paper);text-decoration:line-through;text-decoration-color:var(--accent)}
-.arch__meta{grid-column:2;font-size:.7rem;letter-spacing:.08em;line-height:1.4}
+.arch__meta{font-size:.7rem;letter-spacing:.08em;line-height:1.4}
 
 /* --- signup --------------------------------------------------------------- */
 .signup{display:flex;flex-direction:column;gap:.6rem;max-width:34rem}
@@ -272,8 +271,8 @@ body.is-quiet .hero::after{background:var(--line)}
   .btn--full{width:auto;min-width:18rem}
   .sec{padding:6rem var(--pad)}
   .lineup__time{flex-basis:5rem;font-size:.9rem}
-  .arch{grid-template-columns:3rem 1fr auto;align-items:baseline}
-  .arch__meta{grid-column:3;text-align:right}
+  .arch{grid-template-columns:1fr auto;align-items:baseline}
+  .arch__meta{text-align:right}
   .creed{display:grid;grid-template-columns:1.1fr .9fr;gap:2.5rem;align-items:end}
   .creed__big{margin-bottom:0}
 }

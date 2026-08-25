@@ -62,7 +62,7 @@ export function SiteFooter() {
       <p className="foot__mark">GUMMYBEARS</p>
       <nav className="foot__links">
         <a href={SITE.brand.instagram} target="_blank" rel="noopener">INSTAGRAM</a>
-        <a href={`mailto:${SITE.brand.email}`}>EMAIL</a>
+        {SITE.brand.email ? <a href={`mailto:${SITE.brand.email}`}>EMAIL</a> : null}
         {SITE.brand.whatsapp ? (
           <a href={SITE.brand.whatsapp} target="_blank" rel="noopener">WHATSAPP</a>
         ) : null}
