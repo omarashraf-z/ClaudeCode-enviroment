@@ -142,3 +142,14 @@
   .admin__stats{grid-template-columns:repeat(4,1fr)}
   .ticket{padding:2rem}
 }
+
+/* --- demo build only -------------------------------------------------------- */
+.demo{
+  position:fixed;left:0;right:0;bottom:0;z-index:70;
+  background:var(--paper);color:var(--black);
+  padding:.55rem var(--pad) calc(.55rem + env(safe-area-inset-bottom));
+  font-size:.7rem;line-height:1.45;text-align:center;
+}
+.demo strong{letter-spacing:.16em}
+.demo button{text-decoration:underline;font-size:inherit;padding:0}
+body:has(.demo) .foot{padding-bottom:5rem}

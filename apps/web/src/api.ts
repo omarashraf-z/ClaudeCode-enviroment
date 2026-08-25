@@ -1,3 +1,4 @@
+import { handleDemoRequest } from './demo/backend';
 import type {
   AdminBooking,
   AdminPartySummary,
@@ -15,7 +16,13 @@ export class ApiError extends Error {
   }
 }
 
+/** The demo build has no server: it answers its own requests in the browser.
+ *  Everything above and below this line is identical either way. */
+export const DEMO = import.meta.env.VITE_DEMO === '1';
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  if (DEMO) return demoRequest<T>(path, init);
+
   let response: Response;
   try {
     response = await fetch(`/api${path}`, {
@@ -68,6 +75,18 @@ export const api = {
       request<{ ok: true }>(`/admin/bookings/${encodeURIComponent(ref)}/cancel`, { method: 'POST' })
   }
 };
+
+async function demoRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  /* A beat of latency, so loading states are exercised rather than skipped. */
+  await new Promise((resolve) => window.setTimeout(resolve, 180));
+  const payload = init?.body ? (JSON.parse(String(init.body)) as unknown) : undefined;
+  const result = handleDemoRequest(path, init?.method ?? 'GET', payload);
+  if (result.status >= 400) {
+    const detail = result.body as { error?: string; code?: string };
+    throw new ApiError(detail.error ?? 'Something went wrong.', result.status, detail.code);
+  }
+  return result.body as T;
+}
 
 export const money = (cents: number, currency = 'EUR') =>
   cents === 0

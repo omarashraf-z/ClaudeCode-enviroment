@@ -120,6 +120,40 @@ Ticket references (`GB-4KX7-9QMD`) avoid `0/O/1/I/L` and are read leniently —
 lower case, no dashes, spaces, all fine. Somebody is reading these off a
 cracked phone screen next to a speaker.
 
+## Seeing it live
+
+There are three ways to look at this, in increasing order of realness.
+
+**1. The hosted preview** (no setup, works now)
+
+A build of the front end with `VITE_DEMO=1`: the same React app, but instead of
+calling the API it answers its own requests in the browser
+(`apps/web/src/demo/`). Booking, the QR ticket and door check-in all work; the
+state lives in that browser's localStorage, so it is per-visitor and resets
+when site data is cleared. Nothing is charged.
+
+**2. GitHub Pages** (one click, then automatic)
+
+`.github/workflows/pages.yml` builds the same demo on every push. It needs
+Pages switched on once: **repo → Settings → Pages → Source: GitHub Actions**.
+After that it publishes to `https://<user>.github.io/<repo>/` on every push.
+
+**3. The real stack** (the one that actually sells tickets)
+
+```bash
+docker build -t gummybears .
+docker run -p 4000:4000 -v gummybears-data:/app/apps/api/data \
+  -e ADMIN_PASSWORD=... -e SESSION_SECRET=$(openssl rand -hex 32) \
+  -e WEB_ORIGIN=https://your-domain gummybears
+```
+
+One container: Express serves the API and the built front end from the same
+port. `render.yaml` is a Render blueprint for the same thing with a persistent
+disk attached — New → Blueprint, point it at the repo, set `ADMIN_PASSWORD`.
+Fly, Railway or any VPS work the same way. **Keep the data volume**: that
+SQLite file is the bookings.
+
+
 ## Deploying
 
 Simplest: one process. `npm run build` then `npm start` — the API serves the

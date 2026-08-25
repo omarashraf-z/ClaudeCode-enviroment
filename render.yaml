@@ -1,0 +1,26 @@
+# Render blueprint for the full stack (API + front end in one service).
+# New > Blueprint, point it at this repo, then set ADMIN_PASSWORD.
+services:
+  - type: web
+    name: gummybears
+    runtime: docker
+    plan: starter          # a persistent disk needs a paid plan
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WEB_ORIGIN
+        fromService:
+          type: web
+          name: gummybears
+          property: host
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false        # set this yourself in the dashboard
+      - key: DATABASE_URL
+        value: /data/gummybears.db
+    disk:
+      name: bookings
+      mountPath: /data
+      sizeGB: 1
