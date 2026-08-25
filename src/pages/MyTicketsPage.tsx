@@ -105,11 +105,8 @@ function TicketStub({
       </div>
 
       <div className="stub__foot">
-        <img className="stub__mark" src="/favicon.png" alt="" aria-hidden="true" />
-        <p className="stub__brand">
-          {SITE.brand.name}
-          <small>{SITE.brand.motto}</small>
-        </p>
+        <img className="stub__mark" src={`${import.meta.env.BASE_URL}favicon.png`} alt="" aria-hidden="true" />
+        <p className="stub__brand">{SITE.brand.name}</p>
         <div className="stub__grad" aria-hidden="true" />
         <p className="stub__status">CONFIRMED</p>
       </div>
