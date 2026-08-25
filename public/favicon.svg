@@ -1,14 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gummybears">
-  <rect width="64" height="64" rx="12" fill="#0b0709"/>
-  <g fill="#ff2d3f">
-    <circle cx="19" cy="15" r="6.5"/><circle cx="45" cy="15" r="6.5"/>
-    <ellipse cx="32" cy="24" rx="13" ry="11"/>
-    <ellipse cx="32" cy="43" rx="14.5" ry="15"/>
-    <circle cx="13" cy="37" r="7"/><circle cx="51" cy="37" r="7"/>
-    <ellipse cx="22" cy="56" rx="7.5" ry="6.5"/><ellipse cx="42" cy="56" rx="7.5" ry="6.5"/>
-  </g>
-  <g fill="#0b0709">
-    <circle cx="27" cy="22" r="2"/><circle cx="37" cy="22" r="2"/>
-    <ellipse cx="32" cy="28" rx="3" ry="2.2"/>
-  </g>
+  <circle cx="32" cy="32" r="27" fill="none" stroke="#000" stroke-width="3"/>
+  <path fill="#000" d="
+    M32,15
+    C36,15 38,12 42,13
+    C46,14 48,18 47,22
+    C46,26 43,27 44,31
+    C45,35 49,36 49,41
+    C49,46 45,48 45,52
+    C45,56 41,58 37,56
+    C34,54 34,51 32,51
+    C30,51 30,54 27,56
+    C23,58 19,56 19,52
+    C19,48 15,46 15,41
+    C15,36 19,35 20,31
+    C21,27 18,26 17,22
+    C16,18 18,14 22,13
+    C26,12 28,15 32,15
+    Z"/>
 </svg>
