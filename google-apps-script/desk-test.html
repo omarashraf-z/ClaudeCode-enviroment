@@ -52,11 +52,12 @@
   <input id="email" value="" placeholder="you@example.com">
 
   <div class="row">
+    <button class="ghost" id="ping">0 · DIAGNOSE</button>
     <button class="ghost" id="get">1 · READ THE SHEET</button>
     <button id="post">2 · SEND A TEST RESERVATION</button>
   </div>
 
-  <pre id="out">Ready. Start with button 1 — it only reads, it changes nothing.</pre>
+  <pre id="out">Ready. Start with button 0 — it only reports, it changes nothing.</pre>
 </main>
 
 <script>
@@ -86,6 +87,59 @@ function explain(error) {
   return 'Raw error: ' + message;
 }
 
+$('ping').addEventListener('click', async () => {
+  const button = $('ping');
+  button.disabled = true;
+  show('Asking the script what it can see…');
+  try {
+    const url = $('url').value.trim() + (($('url').value.indexOf('?') > -1) ? '&' : '?') + 'ping=1';
+    const response = await fetch(url, { method: 'GET' });
+    const text = await response.text();
+    let verdict;
+    try {
+      const data = JSON.parse(text);
+      if (data.ok) {
+        verdict = [
+          '✓ THE SCRIPT IS HEALTHY.',
+          '',
+          '  running as    : ' + data.runningAs,
+          '  spreadsheet   : ' + data.spreadsheet,
+          '  tab           : ' + data.tab,
+          '  rows so far   : ' + data.rows,
+          '  receipts folder: ' + data.receiptsFolder,
+          '  email         : ' + data.canSendEmail,
+          '',
+          'If reservations still are not arriving, the site is not reaching',
+          'this URL — check that the site is using exactly the URL above.'
+        ].join('\n');
+      } else {
+        verdict = [
+          '✕ THE SCRIPT RAN BUT CANNOT DO ITS JOB.',
+          '',
+          '  ' + data.problem,
+          '',
+          'If it says it is not attached to a spreadsheet, the script was',
+          'created standalone. Either recreate it from inside the sheet',
+          '(Extensions → Apps Script), or set CONFIG.spreadsheetId.'
+        ].join('\n');
+      }
+    } catch {
+      verdict = [
+        '✕ THAT WAS NOT JSON — almost always a Google sign-in page.',
+        '',
+        'The deployment is not shared with "Anyone". Fix it with:',
+        '  Deploy → Manage deployments → ✏️ → Who has access: Anyone → Deploy',
+        '',
+        'Also check you copied the /exec URL, not /dev.'
+      ].join('\n');
+    }
+    show(verdict + '\n\nHTTP ' + response.status + '\n\n' + text.slice(0, 900), verdict[0] === '✓' ? 'ok' : 'bad');
+  } catch (error) {
+    show('✕ COULD NOT REACH THE SCRIPT AT ALL\n\n' + explain(error), 'bad');
+  }
+  button.disabled = false;
+});
+
 $('get').addEventListener('click', async () => {
   const button = $('get');
   button.disabled = true;
@@ -98,7 +152,8 @@ $('get').addEventListener('click', async () => {
       const data = JSON.parse(text);
       verdict = data.ok
         ? '✓ THE DESK IS ANSWERING. It reports ' + (data.total || 0) + ' ticket(s) reserved so far.'
-        : '✕ The script answered, but reported: ' + data.error;
+        : '✕ The script answered, but reported: ' + data.error
+          + (data.detail ? '\n\n  detail: ' + data.detail : '');
     } catch {
       verdict = '✕ That was not JSON — usually a Google sign-in page, which means\n'
               + '  the deployment is not shared with "Anyone".';
@@ -163,7 +218,8 @@ $('post').addEventListener('click', async () => {
           + '  Check the sheet for a PENDING row, Drive for the receipt,\n'
           + '  and ' + email + ' for the confirmation email.\n'
           + '  Then delete that row.'
-        : '✕ The script ran but refused it: ' + data.error;
+        : '✕ The script ran but refused it: ' + data.error
+          + (data.detail ? '\n\n  detail: ' + data.detail : '');
     } catch {
       verdict = '✕ The reply was not JSON — usually a sign-in page.\n'
               + '  IMPORTANT: check the sheet anyway. The row may have been written\n'

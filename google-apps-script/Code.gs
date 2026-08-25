@@ -18,6 +18,13 @@
  */
 
 const CONFIG = {
+  /** Leave '' when this script lives INSIDE the sheet (Extensions → Apps
+   *  Script). If you created it standalone at script.google.com instead, the
+   *  script has no sheet of its own — paste the sheet's ID here. It is the
+   *  long code in the sheet's URL:
+   *  docs.google.com/spreadsheets/d/THIS_PART/edit */
+  spreadsheetId: '',
+
   /** Tab the reservations land in. Created automatically. */
   sheetName: 'Reservations',
   /** Drive folder the screenshots land in. Created automatically. */
@@ -95,12 +102,22 @@ function doPost(e) {
     }
   } catch (error) {
     console.error(error);
-    return json({ ok: false, error: 'Something broke on our side. Message us on Instagram.' });
+    /* The detail is for whoever is setting this up — a guest never sees it
+       unless something is genuinely broken, and then it is what fixes it. */
+    return json({
+      ok: false,
+      error: 'Something broke on our side. Message us on Instagram.',
+      detail: String(error && error.message ? error.message : error)
+    });
   }
 }
 
-/** The site asks how many are gone, so it can show "x left" and sell out. */
-function doGet() {
+/** The site asks how many are gone, so it can show "x left" and sell out.
+ *  Adding ?ping=1 runs a self-test instead — open that URL in a browser when
+ *  something is not working and it will say what it can and cannot see. */
+function doGet(e) {
+  if (e && e.parameter && e.parameter.ping) return ping();
+
   try {
     const sheet = getSheet();
     const rows = sheet.getDataRange().getValues();
@@ -118,14 +135,70 @@ function doGet() {
     return json({ ok: true, taken: taken, total: total });
   } catch (error) {
     console.error(error);
-    return json({ ok: false, error: 'Could not read the sheet.' });
+    return json({
+      ok: false,
+      error: 'Could not read the sheet.',
+      detail: String(error && error.message ? error.message : error)
+    });
   }
+}
+
+/** Self-test. Reads everything it needs and reports what worked. */
+function ping() {
+  const report = {
+    ok: false,
+    deployed: true,
+    runningAs: '',
+    spreadsheet: null,
+    tab: null,
+    rows: null,
+    receiptsFolder: null,
+    canSendEmail: null,
+    problem: null
+  };
+
+  try {
+    report.runningAs = Session.getEffectiveUser().getEmail();
+  } catch (error) {
+    report.runningAs = '(hidden)';
+  }
+
+  try {
+    const book = getBook();
+    report.spreadsheet = book.getName();
+
+    const sheet = book.getSheetByName(CONFIG.sheetName);
+    report.tab = sheet ? CONFIG.sheetName : '(not created yet — normal before the first reservation)';
+    report.rows = sheet ? Math.max(0, sheet.getLastRow() - 1) : 0;
+
+    const folders = DriveApp.getFoldersByName(CONFIG.receiptsFolder);
+    report.receiptsFolder = folders.hasNext() ? 'exists' : '(not created yet — normal)';
+
+    report.canSendEmail = MailApp.getRemainingDailyQuota() + ' emails left today';
+    report.ok = true;
+  } catch (error) {
+    report.problem = String(error && error.message ? error.message : error);
+  }
+
+  return json(report);
 }
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 
+function getBook() {
+  if (CONFIG.spreadsheetId) return SpreadsheetApp.openById(CONFIG.spreadsheetId);
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (!active) {
+    throw new Error(
+      'This script is not attached to a spreadsheet. Either create it from ' +
+      'inside the sheet (Extensions → Apps Script), or set CONFIG.spreadsheetId.'
+    );
+  }
+  return active;
+}
+
 function getSheet() {
-  const book = SpreadsheetApp.getActiveSpreadsheet();
+  const book = getBook();
   let sheet = book.getSheetByName(CONFIG.sheetName);
   if (!sheet) sheet = book.insertSheet(CONFIG.sheetName);
 

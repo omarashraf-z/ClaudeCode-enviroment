@@ -91,6 +91,12 @@ export default function ReservePage() {
     return (
       <Shell>
         <div className="sent">
+          {done.simulated ? (
+            <p className="sent__warn sent__warn--loud" role="alert">
+              NOT SENT — this build has no reservation desk connected, so nothing
+              reached anybody. Everything below is what a real guest would see.
+            </p>
+          ) : null}
           <p className="sent__tick" aria-hidden="true">✓</p>
           <h1 className="book__h">GOT IT</h1>
           <p className="sent__lede">
@@ -103,11 +109,6 @@ export default function ReservePage() {
             <div><dt>TICKETS</dt><dd>{done.quantity} × {done.ticket}</dd></div>
             <div><dt>EMAIL</dt><dd>{done.email}</dd></div>
           </dl>
-          {done.simulated ? (
-            <p className="sent__warn">
-              Nothing was actually sent — this site has no reservation desk connected yet.
-            </p>
-          ) : null}
           <Link className="btn btn--ghost" to="/">BACK TO THE FRONT</Link>
         </div>
       </Shell>
