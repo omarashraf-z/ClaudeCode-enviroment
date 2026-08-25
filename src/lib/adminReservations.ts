@@ -58,8 +58,13 @@ export async function fetchAllReservations(): Promise<AdminReservation[]> {
 
 export async function setReservationStatus(
   id: string,
-  status: 'confirmed' | 'rejected'
+  status: 'pending' | 'confirmed' | 'rejected'
 ): Promise<void> {
   const { error } = await supabase.from('reservations').update({ status }).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteReservation(id: string): Promise<void> {
+  const { error } = await supabase.from('reservations').delete().eq('id', id);
   if (error) throw new Error(error.message);
 }

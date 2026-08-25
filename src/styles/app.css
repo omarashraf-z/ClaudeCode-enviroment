@@ -239,6 +239,15 @@
 .admin__row-actions{display:flex;gap:.5rem;flex:0 0 auto}
 .admin__row-actions .btn{padding:.5rem .9rem;font-size:.68rem}
 
+.admin__icon-btn{
+  display:grid;place-items:center;width:2.4rem;height:2.4rem;flex:0 0 auto;
+  border:1px solid var(--line);color:var(--paper);
+  transition:border-color .15s,color .15s;
+}
+.admin__icon-btn:hover{border-color:var(--paper)}
+.admin__icon-btn--danger:hover{border-color:var(--accent);color:var(--accent)}
+.admin__icon-btn:disabled{opacity:.5;cursor:wait}
+
 .admin__ticket-row{display:grid;grid-template-columns:1fr 6rem 6rem auto;gap:.5rem;margin-bottom:.6rem;align-items:center}
 .admin__ticket-row input{
   font:inherit;padding:.6rem .7rem;color:var(--paper);background:rgba(255,246,234,.04);border:1px solid var(--line);

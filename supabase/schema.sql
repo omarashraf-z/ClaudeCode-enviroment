@@ -136,6 +136,8 @@ create policy "admins read all reservations" on public.reservations
   for select using (public.is_admin());
 create policy "admins update reservation status" on public.reservations
   for update using (public.is_admin());
+create policy "admins delete reservations" on public.reservations
+  for delete using (public.is_admin());
 
 -- ── payment receipts (Storage) ─────────────────────────────────────────
 insert into storage.buckets (id, name, public)
