@@ -107,7 +107,10 @@ create policy "admins manage archive" on public.archive for all
 -- ── reservations ────────────────────────────────────────────────────────
 create table public.reservations (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  /* References profiles, not auth.users directly — the admin panel asks
+     PostgREST to embed profiles(username) alongside each reservation, which
+     only works when there's a real foreign key straight to that table. */
+  user_id uuid not null references public.profiles(id) on delete cascade,
   party_name text not null,
   ticket text not null,
   quantity int not null check (quantity between 1 and 10),
