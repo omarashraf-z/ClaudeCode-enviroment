@@ -249,3 +249,73 @@
   .admin__ticket-row input:first-child{grid-column:1 / -1}
   .admin__ticket-row button{grid-column:1 / -1}
 }
+
+/* --- the ticket stub ---------------------------------------------------------
+   A real torn-ticket look for a confirmed reservation on My Tickets: a
+   scalloped top/bottom edge and two side notches, in the poster's own paper
+   colour. The notches are painted in the page background rather than
+   masked out — mask-composite: exclude silently no-ops in some engines
+   once a third mask layer is added, painting over is simpler and reliable. */
+.stub{
+  --bump:6px;--pitch:20px;
+  position:relative;
+  background:var(--paper);color:var(--black);
+  padding:calc(1.6rem + var(--bump)) 1.4rem calc(1.5rem + var(--bump));
+  margin-bottom:1.6rem;
+  mask-image:
+    linear-gradient(black,black),
+    repeating-radial-gradient(circle var(--bump) at calc(var(--pitch)/2) 0, black 99%, transparent 100%),
+    repeating-radial-gradient(circle var(--bump) at calc(var(--pitch)/2) 0, black 99%, transparent 100%);
+  mask-position: 0 var(--bump), 0 0, 0 100%;
+  mask-size: 100% calc(100% - var(--bump) * 2), var(--pitch) var(--bump), var(--pitch) var(--bump);
+  mask-repeat: no-repeat, repeat-x, repeat-x;
+}
+.stub::before,.stub::after{
+  content:'';position:absolute;top:38%;width:30px;height:30px;
+  background:var(--black);border-radius:50%;transform:translateY(-50%);z-index:1;
+}
+.stub::before{left:-15px}
+.stub::after{right:-15px}
+
+.stub__badge{
+  position:absolute;top:1.1rem;right:-.4rem;
+  background:var(--accent);color:var(--accent-ink);
+  font-family:var(--display);font-size:.9rem;letter-spacing:.04em;
+  padding:.3rem .7rem;transform:rotate(3deg);
+}
+.stub__eyebrow{font-size:.62rem;letter-spacing:.22em;color:rgba(11,7,9,.5);margin-bottom:.2rem}
+.stub__title{
+  font-family:var(--display);font-weight:400;text-transform:uppercase;
+  font-size:clamp(1.7rem,8vw,2.4rem);line-height:.92;margin:0 0 1rem;padding-right:3.5rem;
+}
+
+.stub__facts{border-top:1px solid rgba(11,7,9,.15);padding-top:.8rem;margin-bottom:1.1rem}
+.stub__facts li{display:flex;gap:.5rem;font-size:.78rem;line-height:1.7;font-weight:500}
+.stub__facts li::before{content:'▶';font-size:.55rem;color:var(--accent);margin-top:.4rem}
+
+.stub__cut{display:flex;gap:1rem;border-top:1px dashed rgba(11,7,9,.3);padding-top:1.1rem;margin-top:.2rem}
+.stub__barcode{
+  flex:0 0 auto;width:1.7rem;
+  background-image:repeating-linear-gradient(90deg,
+    #000 0, #000 2px, transparent 2px, transparent 3px,
+    #000 3px, #000 4px, transparent 4px, transparent 6px,
+    #000 6px, #000 9px, transparent 9px, transparent 10px);
+  background-size:12px 100%;
+}
+.stub__list{flex:1;min-width:0}
+.stub__list li{
+  display:flex;align-items:baseline;gap:.4rem;
+  font-size:.72rem;letter-spacing:.06em;padding:.4rem 0;
+  border-bottom:1px dotted rgba(11,7,9,.25);
+}
+.stub__list li:last-child{border-bottom:0}
+.stub__list dt{font-weight:700;text-transform:uppercase;white-space:nowrap}
+.stub__list .fill{flex:1;border-bottom:1px dotted rgba(11,7,9,.35);height:0;margin-bottom:.25rem}
+.stub__list dd{margin:0;white-space:nowrap;font-weight:500}
+
+.stub__foot{display:flex;align-items:center;gap:.7rem;border-top:1px solid rgba(11,7,9,.15);margin-top:1.2rem;padding-top:1rem}
+.stub__mark{width:1.6rem;height:1.6rem;flex:0 0 auto}
+.stub__brand{font-family:var(--display);font-size:.85rem;letter-spacing:.02em;line-height:1.05}
+.stub__brand small{display:block;font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;color:rgba(11,7,9,.5);font-weight:400}
+.stub__grad{flex:1;height:1.5rem;background:linear-gradient(90deg,transparent,var(--accent))}
+.stub__status{font-size:.62rem;letter-spacing:.1em;font-weight:700;white-space:nowrap}

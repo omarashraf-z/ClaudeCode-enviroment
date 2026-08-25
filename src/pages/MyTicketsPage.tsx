@@ -3,10 +3,15 @@ import { Link } from 'react-router-dom';
 import { Grain, TopBar } from '../components/Chrome';
 import { AuthGate } from '../components/AuthGate';
 import { useAuth } from '../lib/auth';
+import { useAccent } from '../hooks/useTheme';
+import { usePartyData } from '../lib/partyData';
 import { fetchMyReservations, type MyReservation } from '../reserve';
-import { money } from '../content';
+import { SITE, money } from '../content';
 
 export default function MyTicketsPage() {
+  const { party } = usePartyData();
+  useAccent(party?.accent, party?.accentInk);
+
   return (
     <div className="page">
       <Grain />
@@ -22,6 +27,7 @@ export default function MyTicketsPage() {
 
 function TicketsList() {
   const { user } = useAuth();
+  const { party } = usePartyData();
   const [reservations, setReservations] = useState<MyReservation[] | null>(null);
 
   useEffect(() => {
@@ -60,18 +66,53 @@ function TicketsList() {
           being checked.
         </p>
       ) : null}
-      <ul className="tiers">
-        {confirmed.map((reservation) => (
-          <li className="tier is-on-sale" key={reservation.id}>
-            <span className="tier__name">{reservation.partyName}</span>
-            <span className="tier__meta">
-              <span className="tier__price">{reservation.quantity} × {reservation.ticket}</span>
-              <span className="tier__state">{money(reservation.amount)}</span>
-            </span>
-            <span className="tier__extra tier__note">{reservation.ref}</span>
-          </li>
-        ))}
-      </ul>
+      {confirmed.map((reservation) => (
+        <TicketStub
+          key={reservation.id}
+          reservation={reservation}
+          venue={reservation.partyName === party?.name ? party : null}
+        />
+      ))}
     </>
+  );
+}
+
+function TicketStub({
+  reservation, venue
+}: { reservation: MyReservation; venue: { dateLine: string; timeLine: string; venue: { name: string; area: string } } | null }) {
+  return (
+    <div className="stub">
+      <span className="stub__badge">{reservation.ref}</span>
+      <p className="stub__eyebrow">CONFIRMED</p>
+      <h2 className="stub__title">{reservation.partyName}</h2>
+
+      {venue ? (
+        <ul className="stub__facts">
+          <li>{venue.venue.name} · {venue.venue.area}</li>
+          <li>{venue.dateLine}</li>
+          <li>{venue.timeLine}</li>
+        </ul>
+      ) : null}
+
+      <div className="stub__cut">
+        <div className="stub__barcode" aria-hidden="true" />
+        <dl className="stub__list">
+          <li><dt>TICKET</dt><span className="fill" /><dd>{reservation.ticket}</dd></li>
+          <li><dt>QTY</dt><span className="fill" /><dd>{reservation.quantity}</dd></li>
+          <li><dt>NAME</dt><span className="fill" /><dd>{reservation.name}</dd></li>
+          <li><dt>PAID</dt><span className="fill" /><dd>{money(reservation.amount)}</dd></li>
+        </dl>
+      </div>
+
+      <div className="stub__foot">
+        <img className="stub__mark" src="/favicon.png" alt="" aria-hidden="true" />
+        <p className="stub__brand">
+          {SITE.brand.name}
+          <small>{SITE.brand.motto}</small>
+        </p>
+        <div className="stub__grad" aria-hidden="true" />
+        <p className="stub__status">CONFIRMED</p>
+      </div>
+    </div>
   );
 }

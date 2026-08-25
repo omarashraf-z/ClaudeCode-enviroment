@@ -138,6 +138,7 @@ export async function fetchTaken(party: string): Promise<Record<string, number> 
 export interface MyReservation {
   id: string;
   ref: string;
+  name: string;
   partyName: string;
   ticket: string;
   quantity: number;
@@ -149,13 +150,14 @@ export interface MyReservation {
 export async function fetchMyReservations(userId: string): Promise<MyReservation[]> {
   const { data, error } = await supabase
     .from('reservations')
-    .select('id, ref, party_name, ticket, quantity, amount, status, created_at')
+    .select('id, ref, name, party_name, ticket, quantity, amount, status, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   if (error || !data) return [];
   return data.map((row) => ({
     id: row.id,
     ref: row.ref,
+    name: row.name,
     partyName: row.party_name,
     ticket: row.ticket,
     quantity: row.quantity,
