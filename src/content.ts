@@ -63,7 +63,9 @@ export const SITE = {
      See google-apps-script/README.md — it takes about three minutes.
      While this is empty the form still works, but nothing is sent: it shows
      the confirmation screen and says plainly that it was not submitted. */
-  reservationEndpoint: (import.meta.env.VITE_RESERVATION_ENDPOINT as string | undefined) || '',
+  reservationEndpoint:
+    (import.meta.env.VITE_RESERVATION_ENDPOINT as string | undefined) ||
+    'https://script.google.com/macros/s/AKfycbwGBcEOS4cWalPALpqEaRVCsY3ldBDzfUmZv4UsLKc24Gr_EdLcWgE-Usw6eCYGJWM8/exec',
 
   /* ── How people pay ──────────────────────────────────────────────────── */
   payment: {
