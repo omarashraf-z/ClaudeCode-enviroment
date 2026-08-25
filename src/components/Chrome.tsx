@@ -21,7 +21,10 @@ export function TopBar({ cta }: { cta?: { label: string; to: string } | null }) 
 
   return (
     <header className={`bar${stuck ? ' is-stuck' : ''}`}>
-      <Link className="bar__logo" to="/">GUMMYBEARS</Link>
+      <Link className="bar__logo" to="/">
+        <img className="bar__mark" src={`${import.meta.env.BASE_URL}favicon.png`} alt="" aria-hidden="true" />
+        GUMMYBEARS
+      </Link>
       <nav className="bar__nav">
         {user ? (
           <>
