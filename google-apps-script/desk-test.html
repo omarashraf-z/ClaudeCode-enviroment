@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gummybears — reservation desk test</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 2rem 1.2rem; background: #0b0709; color: #fff6ea;
+    font: 15px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  main { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size: 1.3rem; letter-spacing: .04em; margin: 0 0 .3rem; }
+  p.sub { color: rgba(255,246,234,.55); margin: 0 0 1.6rem; }
+  label { display: block; font-size: .7rem; letter-spacing: .18em;
+          color: rgba(255,246,234,.55); margin: 1rem 0 .3rem; }
+  input {
+    font: inherit; width: 100%; padding: .7rem .8rem; color: inherit;
+    background: rgba(255,246,234,.05); border: 1px solid rgba(255,246,234,.2);
+    box-sizing: border-box;
+  }
+  .row { display: flex; gap: .6rem; flex-wrap: wrap; margin: 1.4rem 0; }
+  button {
+    font: inherit; font-weight: 500; padding: .8rem 1.2rem; cursor: pointer;
+    background: #ff2d3f; color: #12060a; border: 0; letter-spacing: .06em;
+  }
+  button.ghost { background: transparent; color: inherit; border: 1px solid rgba(255,246,234,.25); }
+  button:disabled { opacity: .5; cursor: wait; }
+  pre {
+    background: rgba(255,246,234,.05); border-left: 3px solid rgba(255,246,234,.2);
+    padding: .9rem; white-space: pre-wrap; word-break: break-word; font-size: .82rem;
+    margin: .8rem 0 0; max-height: 22rem; overflow: auto;
+  }
+  pre.ok   { border-left-color: #33ff6e; }
+  pre.bad  { border-left-color: #ff2d3f; }
+  .verdict { font-weight: 500; }
+</style>
+</head>
+<body>
+<main>
+  <h1>RESERVATION DESK TEST</h1>
+  <p class="sub">
+    Checks the Google Apps Script directly, with nothing else in the way — no
+    website, no hosting, no sandbox. Open this file by double-clicking it.
+  </p>
+
+  <label for="url">WEB APP URL (ends in /exec)</label>
+  <input id="url" value="https://script.google.com/macros/s/AKfycbwGBcEOS4cWalPALpqEaRVCsY3ldBDzfUmZv4UsLKc24Gr_EdLcWgE-Usw6eCYGJWM8/exec">
+
+  <label for="email">YOUR EMAIL (the test guest email goes here)</label>
+  <input id="email" value="" placeholder="you@example.com">
+
+  <div class="row">
+    <button class="ghost" id="get">1 · READ THE SHEET</button>
+    <button id="post">2 · SEND A TEST RESERVATION</button>
+  </div>
+
+  <pre id="out">Ready. Start with button 1 — it only reads, it changes nothing.</pre>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const out = $('out');
+
+function show(text, kind) {
+  out.textContent = text;
+  out.className = kind || '';
+}
+
+/** Turns whatever went wrong into something worth reporting. */
+function explain(error) {
+  const message = String(error && error.message ? error.message : error);
+  if (/Failed to fetch|NetworkError|Load failed/i.test(message)) {
+    return [
+      'The browser could not complete the request.',
+      '',
+      'That is almost always one of:',
+      '  · the deployment is not set to "Who has access: Anyone"',
+      '  · the URL is wrong, or is the /dev URL instead of /exec',
+      '  · you are offline',
+      '',
+      'Raw error: ' + message
+    ].join('\n');
+  }
+  return 'Raw error: ' + message;
+}
+
+$('get').addEventListener('click', async () => {
+  const button = $('get');
+  button.disabled = true;
+  show('Asking the desk what it has…');
+  try {
+    const response = await fetch($('url').value.trim(), { method: 'GET' });
+    const text = await response.text();
+    let verdict;
+    try {
+      const data = JSON.parse(text);
+      verdict = data.ok
+        ? '✓ THE DESK IS ANSWERING. It reports ' + (data.total || 0) + ' ticket(s) reserved so far.'
+        : '✕ The script answered, but reported: ' + data.error;
+    } catch {
+      verdict = '✕ That was not JSON — usually a Google sign-in page, which means\n'
+              + '  the deployment is not shared with "Anyone".';
+    }
+    show(verdict + '\n\nHTTP ' + response.status + '\n\n' + text.slice(0, 1200), verdict[0] === '✓' ? 'ok' : 'bad');
+  } catch (error) {
+    show('✕ COULD NOT REACH THE DESK\n\n' + explain(error), 'bad');
+  }
+  button.disabled = false;
+});
+
+$('post').addEventListener('click', async () => {
+  const button = $('post');
+  const email = $('email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    show('Put your email in the box first — the test guest email is sent there.', 'bad');
+    return;
+  }
+  button.disabled = true;
+  show('Making a fake receipt image and sending a test reservation…');
+
+  try {
+    /* A small stand-in for a payment screenshot. */
+    const canvas = document.createElement('canvas');
+    canvas.width = 600; canvas.height = 900;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#111'; ctx.fillRect(0, 0, 600, 900);
+    ctx.fillStyle = '#fff'; ctx.font = '28px monospace';
+    ctx.fillText('TEST RECEIPT', 40, 120);
+    ctx.fillText(new Date().toISOString(), 40, 170);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+    const buffer = await blob.arrayBuffer();
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+
+    const payload = {
+      name: 'TEST — delete this row',
+      phone: '+20 100 000 0000',
+      email: email,
+      quantity: 1,
+      ticket: 'TEST',
+      amount: 0,
+      note: 'Sent by desk-test.html',
+      party: 'TEST',
+      hp: '',
+      receipt: { data: btoa(binary), type: 'image/jpeg' }
+    };
+
+    const response = await fetch($('url').value.trim(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    const text = await response.text();
+
+    let verdict;
+    try {
+      const data = JSON.parse(text);
+      verdict = data.ok
+        ? '✓ IT WORKS. Reference ' + data.ref + '.\n'
+          + '  Check the sheet for a PENDING row, Drive for the receipt,\n'
+          + '  and ' + email + ' for the confirmation email.\n'
+          + '  Then delete that row.'
+        : '✕ The script ran but refused it: ' + data.error;
+    } catch {
+      verdict = '✕ The reply was not JSON — usually a sign-in page.\n'
+              + '  IMPORTANT: check the sheet anyway. The row may have been written\n'
+              + '  even though the browser could not read the answer.';
+    }
+    show(verdict + '\n\nHTTP ' + response.status + '\n\n' + text.slice(0, 1200), verdict[0] === '✓' ? 'ok' : 'bad');
+  } catch (error) {
+    show('✕ COULD NOT REACH THE DESK\n\n' + explain(error), 'bad');
+  }
+  button.disabled = false;
+});
+</script>
+</body>
+</html>
