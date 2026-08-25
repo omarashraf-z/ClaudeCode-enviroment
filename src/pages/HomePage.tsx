@@ -177,7 +177,7 @@ function PartyHero({
             : !open
               ? 'No door tickets. No guest list. Sorry.'
               : showLeft
-                ? `${left} of ${party.capacity} left`
+                ? `${left} tickets left`
                 : `${party.capacity} people. That’s the whole room.`}
         </p>
       </div>
