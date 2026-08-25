@@ -1,8 +1,10 @@
-# Publishes the front end to GitHub Pages as a self-contained demo: the React
-# app with its in-browser backend (VITE_DEMO=1), so bookings work without the
-# API being hosted anywhere. The real deployment is the whole stack — see
-# the Dockerfile and the README.
-name: Deploy demo to Pages
+# Publishes the site to GitHub Pages on every push.
+#
+# Set a repository variable named RESERVATION_ENDPOINT (Settings → Secrets and
+# variables → Actions → Variables) to point the reservation form at your Apps
+# Script URL without committing it. If it is unset, the value in
+# src/content.ts is used.
+name: Deploy to Pages
 
 on:
   push:
@@ -28,14 +30,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Build the demo
+      - name: Build
         env:
-          VITE_DEMO: '1'
           VITE_BASE: /${{ github.event.repository.name }}/
-        run: npm run build -w @gummybears/web
+          VITE_RESERVATION_ENDPOINT: ${{ vars.RESERVATION_ENDPOINT }}
+        run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web/dist
+          path: dist
 
   deploy:
     needs: build

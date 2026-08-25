@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { Party, PartyState } from '../types';
+import type { Party } from '../content';
+
+/** upcoming → live → over, or quiet when there is no party at all. */
+export type PartyState = 'quiet' | 'upcoming' | 'live' | 'over';
 
 export interface Remaining {
   days: number;
@@ -58,7 +61,7 @@ export function usePartyState(party: Party | null): PartyState {
     const id = window.setInterval(() => setState(compute()), 1000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [party?.doorsAt, party?.endsAt, party?.id]);
+  }, [party?.doorsAt, party?.endsAt, party?.volume]);
 
   return state;
 }

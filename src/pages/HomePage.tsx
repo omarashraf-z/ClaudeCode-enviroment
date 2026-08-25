@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Countdown } from '../components/Countdown';
 import { Grain, SiteFooter, Ticker, TopBar } from '../components/Chrome';
-import { useParty } from '../hooks/useParty';
-import { usePartyState } from '../hooks/useCountdown';
+import { usePartyState, type PartyState } from '../hooks/useCountdown';
 import { useAccent } from '../hooks/useTheme';
 import { downloadIcs } from '../ics';
-import { money } from '../api';
-import type { ArchiveEntry, Party, PartyState } from '../types';
+import { SITE, money, type Party } from '../content';
+import { fetchTaken } from '../reserve';
 
 const TICKER = [
   'ONE PARTY AT A TIME',
@@ -17,36 +16,30 @@ const TICKER = [
   'WHEN IT’S GONE IT’S GONE'
 ];
 
-function statusLabel(state: PartyState, party: Party | null): string {
-  if (!party) return 'NOTHING PLANNED';
-  if (state === 'live') return 'HAPPENING NOW';
-  if (state === 'over') return 'IT’S OVER';
-  if (party.soldOut) return 'SOLD OUT';
-  if (party.ticketsLeft <= 50) return 'LAST TICKETS';
-  return 'ON SALE';
-}
-
 export default function HomePage() {
-  const { data, error, loading } = useParty();
-  const party = data?.party ?? null;
+  const party = SITE.party;
   const state = usePartyState(party);
   useAccent(party?.accent, party?.accentInk);
 
-  if (loading) return <Booting />;
-  if (error) return <Broken message={error} />;
+  /* How many are gone, straight from the reservations sheet. Optional: with
+     no desk configured, or none reachable, the counters simply don't show. */
+  const [taken, setTaken] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    void fetchTaken().then(setTaken);
+  }, []);
 
-  const archive = data?.archive ?? [];
-  const bookable = state === 'upcoming' || state === 'live';
-  const canBuy = bookable && !!party && !party.soldOut;
+  const left = party ? remaining(party, taken) : 0;
+  const soldOut = party ? left <= 0 && taken !== null : false;
+  const open = (state === 'upcoming' || state === 'live') && !soldOut;
 
   return (
     <div className={state === 'quiet' || state === 'over' ? 'is-quiet' : undefined}>
       <Grain />
-      <TopBar cta={canBuy ? { label: 'TICKETS', to: '/book' } : null} />
+      <TopBar cta={open ? { label: 'RESERVE', to: '/reserve' } : null} />
 
       <main id="main">
         {party ? (
-          <PartyHero party={party} state={state} canBuy={canBuy} />
+          <PartyHero party={party} state={state} open={open} left={left} showLeft={taken !== null} />
         ) : (
           <QuietHero />
         )}
@@ -55,27 +48,29 @@ export default function HomePage() {
 
         {party && state !== 'over' ? (
           <>
-            <section className="sec" id="lineup">
-              <h2 className="sec__h">THE NIGHT</h2>
-              <ol className="lineup">
-                {party.lineup.map((act) => (
-                  <li className={`lineup__item${act.headline ? ' is-headline' : ''}`} key={`${act.time}-${act.name}`}>
-                    <span className="lineup__time">{act.time}</span>
-                    <div className="lineup__body">
-                      <p className="lineup__name">{act.name}</p>
-                      {act.note ? <p className="lineup__note">{act.note}</p> : null}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </section>
+            {party.lineup?.length ? (
+              <section className="sec" id="lineup">
+                <h2 className="sec__h">THE NIGHT</h2>
+                <ol className="lineup">
+                  {party.lineup.map((act) => (
+                    <li className={`lineup__item${act.headline ? ' is-headline' : ''}`} key={`${act.time}-${act.name}`}>
+                      <span className="lineup__time">{act.time}</span>
+                      <div className="lineup__body">
+                        <p className="lineup__name">{act.name}</p>
+                        {act.note ? <p className="lineup__note">{act.note}</p> : null}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ) : null}
 
-            <TicketSection party={party} canBuy={canBuy} />
+            <TicketSection party={party} open={open} taken={taken} />
             <VenueSection party={party} />
           </>
         ) : null}
 
-        {party ? (
+        {party?.creed ? (
           <section className="sec creed" id="creed">
             <p className="creed__big">ONE PARTY.<br />ONE NIGHT.<br />THEN IT’S GONE.</p>
             <p className="creed__body">{party.creed}</p>
@@ -83,7 +78,7 @@ export default function HomePage() {
         ) : null}
 
         <Ticker words={TICKER} reverse />
-        <ArchiveSection entries={archive} />
+        <ArchiveSection />
       </main>
 
       <SiteFooter />
@@ -91,8 +86,26 @@ export default function HomePage() {
   );
 }
 
-function PartyHero({ party, state, canBuy }: { party: Party; state: PartyState; canBuy: boolean }) {
-  const label = statusLabel(state, party);
+function remaining(party: Party, taken: Record<string, number> | null): number {
+  const capacity = party.tickets
+    .filter((ticket) => !ticket.doorOnly)
+    .reduce((total, ticket) => total + ticket.quantity, 0);
+  if (!taken) return capacity;
+  const gone = Object.values(taken).reduce((total, count) => total + count, 0);
+  return Math.max(0, Math.min(capacity, party.capacity) - gone);
+}
+
+function statusLabel(state: PartyState, open: boolean, left: number, showLeft: boolean): string {
+  if (state === 'live') return 'HAPPENING NOW';
+  if (state === 'over') return 'IT’S OVER';
+  if (!open) return 'SOLD OUT';
+  if (showLeft && left <= 50) return 'LAST TICKETS';
+  return 'ON SALE';
+}
+
+function PartyHero({
+  party, state, open, left, showLeft
+}: { party: Party; state: PartyState; open: boolean; left: number; showLeft: boolean }) {
   const dead = state === 'over';
 
   return (
@@ -101,7 +114,7 @@ function PartyHero({ party, state, canBuy }: { party: Party; state: PartyState; 
         <p className="hero__eyebrow">
           <span className={`pill${dead ? ' is-dead' : ''}`}>
             <span className="pill__dot" />
-            {label}
+            {statusLabel(state, open, left, showLeft)}
           </span>
           <span className="hero__vol">VOL. {String(party.volume).padStart(2, '0')}</span>
         </p>
@@ -114,7 +127,7 @@ function PartyHero({ party, state, canBuy }: { party: Party; state: PartyState; 
           <div className="facts__row"><dt>DOORS</dt><dd>{party.timeLine}</dd></div>
           <div className="facts__row">
             <dt>WHERE</dt>
-            <dd>{party.venue.secret ? 'SECRET · dropped 24h before' : `${party.venue.name} · ${party.venue.area}`}</dd>
+            <dd>{party.venue.secret ? 'SECRET · sent to confirmed guests' : `${party.venue.name} · ${party.venue.area}`}</dd>
           </div>
         </dl>
 
@@ -122,8 +135,8 @@ function PartyHero({ party, state, canBuy }: { party: Party; state: PartyState; 
         {state === 'live' ? <Countdown target={party.endsAt} caption="ENDS IN" live /> : null}
 
         <div className="hero__cta">
-          {canBuy ? (
-            <Link className="btn btn--big" to="/book">GET IN</Link>
+          {open ? (
+            <Link className="btn btn--big" to="/reserve">RESERVE A SPOT</Link>
           ) : (
             <span className="btn btn--big is-dead">{dead ? 'YOU MISSED IT' : 'SOLD OUT'}</span>
           )}
@@ -134,13 +147,13 @@ function PartyHero({ party, state, canBuy }: { party: Party; state: PartyState; 
               onClick={() =>
                 downloadIcs({
                   uid: `vol${party.volume}`,
-                  title: `GUMMYBEARS — ${party.name}`,
+                  title: `${SITE.brand.name} — ${party.name}`,
                   start: party.doorsAt,
                   end: party.endsAt,
                   location: party.venue.secret
-                    ? 'Location announced 24h before'
+                    ? 'Location sent to confirmed guests'
                     : `${party.venue.name}, ${party.venue.address ?? party.venue.area}`,
-                  description: `${party.subtitle} ${window.location.origin}`
+                  description: `${party.subtitle ?? ''} ${window.location.href}`
                 })
               }
             >
@@ -152,9 +165,11 @@ function PartyHero({ party, state, canBuy }: { party: Party; state: PartyState; 
         <p className="hero__left">
           {dead
             ? 'Nothing is planned. That is the point.'
-            : party.soldOut
+            : !open
               ? 'No door tickets. No guest list. Sorry.'
-              : `${party.ticketsLeft} of ${party.capacity} left`}
+              : showLeft
+                ? `${left} of ${party.capacity} left`
+                : `${party.capacity} people. That’s the whole room.`}
         </p>
       </div>
       <div className="scroll-hint" aria-hidden="true">↓</div>
@@ -181,50 +196,52 @@ function QuietHero() {
   );
 }
 
-function TicketSection({ party, canBuy }: { party: Party; canBuy: boolean }) {
+function TicketSection({
+  party, open, taken
+}: { party: Party; open: boolean; taken: Record<string, number> | null }) {
   return (
     <section className="sec sec--invert" id="tickets">
       <h2 className="sec__h">TICKETS</h2>
       <p className="sec__lede">
-        {party.soldOut
-          ? `All ${party.capacity} tickets are gone. There is no waiting list.`
-          : `${party.capacity} people fit in the room. When they are in, the door closes.`}
+        {party.capacity} people fit in the room. When they are in, the door closes.
       </p>
 
       <ul className="tiers">
-        {party.tiers.map((tier) => {
-          const state = tier.soldOut ? 'sold-out' : tier.doorOnly ? 'maybe' : 'on-sale';
+        {party.tickets.map((ticket) => {
+          const left = Math.max(0, ticket.quantity - (taken?.[ticket.name] ?? 0));
+          const gone = !ticket.doorOnly && taken !== null && left === 0;
+          const state = gone ? 'sold-out' : ticket.doorOnly ? 'maybe' : 'on-sale';
           return (
-            <li className={`tier is-${state}`} key={tier.id}>
-              <span className="tier__name">{tier.name}</span>
+            <li className={`tier is-${state}`} key={ticket.name}>
+              <span className="tier__name">{ticket.name}</span>
               <span className="tier__meta">
-                <span className="tier__price">{money(tier.priceCents, tier.currency)}</span>
+                <span className="tier__price">{money(ticket.price)}</span>
                 <span className="tier__state">
-                  {tier.soldOut ? 'GONE' : tier.doorOnly ? 'DOOR ONLY' : `${tier.remaining} LEFT`}
+                  {gone ? 'GONE' : ticket.doorOnly ? 'DOOR ONLY' : taken !== null ? `${left} LEFT` : 'ON SALE'}
                 </span>
               </span>
-              {!tier.soldOut && !tier.doorOnly ? (
+              {!gone && !ticket.doorOnly && taken !== null ? (
                 <span className="tier__extra">
                   <span className="tier__bar">
-                    <i style={{ width: `${Math.max(2, Math.round((tier.remaining / Math.max(1, tier.quantity)) * 100))}%` }} />
+                    <i style={{ width: `${Math.max(2, Math.round((left / Math.max(1, ticket.quantity)) * 100))}%` }} />
                   </span>
                 </span>
-              ) : tier.note ? (
-                <span className="tier__extra tier__note">{tier.note}</span>
+              ) : ticket.note ? (
+                <span className="tier__extra tier__note">{ticket.note}</span>
               ) : null}
             </li>
           );
         })}
       </ul>
 
-      {canBuy ? (
-        <Link className="btn btn--big btn--full" to="/book">GET IN</Link>
+      {open ? (
+        <Link className="btn btn--big btn--full" to="/reserve">RESERVE A SPOT</Link>
       ) : (
         <span className="btn btn--big btn--full is-dead">SOLD OUT</span>
       )}
       <p className="fineprint">
-        Tickets are per person and non-transferable at the door. If it sells out, it sells out — we
-        don’t add capacity.
+        You pay by {SITE.payment.label} and send us the screenshot. We check every transfer by
+        hand and confirm you by email. If it sells out, it sells out — we don’t add capacity.
       </p>
     </section>
   );
@@ -239,9 +256,7 @@ function VenueSection({ party }: { party: Party }) {
       <div className="venue">
         <p className="venue__name">{party.venue.secret ? 'LOCATION TBA' : party.venue.name}</p>
         <p className="venue__addr">
-          {party.venue.secret
-            ? 'Sent to ticket holders 24 hours before doors.'
-            : party.venue.address}
+          {party.venue.secret ? 'Sent to confirmed guests before the night.' : party.venue.address}
         </p>
         {party.venue.note ? <p className="venue__note">{party.venue.note}</p> : null}
 
@@ -268,24 +283,26 @@ function VenueSection({ party }: { party: Party }) {
         ) : null}
       </div>
 
-      <h3 className="sub__h">HOUSE RULES</h3>
-      <ul className="rules">
-        {party.rules.map((rule) => (
-          <li key={rule}>{rule}</li>
-        ))}
-      </ul>
+      {party.rules?.length ? (
+        <>
+          <h3 className="sub__h">HOUSE RULES</h3>
+          <ul className="rules">
+            {party.rules.map((rule) => <li key={rule}>{rule}</li>)}
+          </ul>
+        </>
+      ) : null}
     </section>
   );
 }
 
-function ArchiveSection({ entries }: { entries: ArchiveEntry[] }) {
-  if (!entries.length) return null;
+function ArchiveSection() {
+  if (!SITE.archive.length) return null;
   return (
     <section className="sec" id="archive">
       <h2 className="sec__h">GONE</h2>
       <p className="sec__lede">Everything we’ve already done. You can’t get into any of it.</p>
       <ul className="archive">
-        {entries.map((entry) => (
+        {SITE.archive.map((entry) => (
           <li className="arch" key={entry.volume}>
             <span className="arch__vol">V{String(entry.volume).padStart(2, '0')}</span>
             <span className="arch__name">{entry.name}</span>
@@ -294,24 +311,5 @@ function ArchiveSection({ entries }: { entries: ArchiveEntry[] }) {
         ))}
       </ul>
     </section>
-  );
-}
-
-function Booting() {
-  return (
-    <div className="boot">
-      <Grain />
-      <p className="boot__mark">GUMMYBEARS</p>
-    </div>
-  );
-}
-
-function Broken({ message }: { message: string }) {
-  return (
-    <div className="boot">
-      <Grain />
-      <p className="boot__mark">GUMMYBEARS</p>
-      <p className="boot__msg">{message}</p>
-    </div>
   );
 }

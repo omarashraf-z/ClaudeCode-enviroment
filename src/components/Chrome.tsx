@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SITE } from '../content';
 
 export function Grain() {
   return <div className="grain" aria-hidden="true" />;
@@ -46,9 +47,11 @@ export function SiteFooter() {
     <footer className="foot">
       <p className="foot__mark">GUMMYBEARS</p>
       <nav className="foot__links">
-        <a href="https://www.instagram.com/thegummybeaars/" target="_blank" rel="noopener">INSTAGRAM</a>
-        <a href="mailto:door@gummybears.party">EMAIL</a>
-        <Link to="/admin">DOOR</Link>
+        <a href={SITE.brand.instagram} target="_blank" rel="noopener">INSTAGRAM</a>
+        <a href={`mailto:${SITE.brand.email}`}>EMAIL</a>
+        {SITE.brand.whatsapp ? (
+          <a href={SITE.brand.whatsapp} target="_blank" rel="noopener">WHATSAPP</a>
+        ) : null}
       </nav>
       <p className="foot__note">No cookies. No tracking. No newsletter you didn’t ask for.</p>
     </footer>

@@ -1,181 +1,92 @@
 # GUMMYBEARS
 
-An entertainment brand that throws **one party at a time**, and a booking system
-that believes it. The home page *is* the current party. You can buy a ticket,
-get a QR code, and be scanned in at the door.
+A site for an entertainment brand that throws **one party at a time**. The home
+page *is* the current party. People reserve a spot by transferring the money by
+InstaPay and attaching the screenshot; you check it and confirm them by hand.
 
-- **Front end** — React 19 + TypeScript + Vite, React Router. Mobile first: the
-  primary visitor is somebody tapping the Instagram bio link on a phone.
-- **Back end** — Express + SQLite (better-sqlite3), TypeScript, zod. No cloud
-  services required to run the whole thing.
-- **Tests** — 21 of them, `node:test`, covering the parts where money and
-  capacity are at stake.
+There is no server to run and nothing to pay for. It is a folder of static
+files on GitHub Pages, and the reservation desk is a Google Sheet.
 
 ```
-apps/
-  api/                Express + SQLite
-    src/
-      db.ts           schema and connection
-      parties.ts      party reads, public payload shaping
-      bookings.ts     selling, cancelling, checking in  ← the important file
-      payments.ts     mock + Stripe Checkout (REST, no SDK)
-      auth.ts         signed-cookie sessions for the door staff
-      routes/         public.ts, admin.ts
-      seed.ts         placeholder party + archive
-  web/                React front end
-    src/
-      pages/          HomePage, BookPage, TicketPage, AdminPage
-      components/     top bar, ticker, countdown, grain
-      styles/         poster.css (the poster) + app.css (booking, ticket, door)
+src/
+  content.ts        ← THE ONLY FILE YOU EDIT BETWEEN PARTIES
+  pages/            HomePage (the poster), ReservePage (the form)
+  components/       top bar, ticker, countdown, grain
+  reserve.ts        sends a reservation to the sheet
+  styles/           poster.css (the poster) + app.css (form, payment, receipt)
+google-apps-script/
+  Code.gs           the reservation desk — paste this into your sheet
+  README.md         three-minute setup
 ```
 
-## Running it
+## How a reservation actually works
 
-```bash
-npm install
-npm run seed          # placeholder party + seven archived ones
-npm run dev           # api on :4000, web on :5173
-```
+1. Someone opens the site, hits **RESERVE A SPOT**, picks a ticket and how many.
+2. The page shows the exact total and your InstaPay address, with a copy button.
+3. They send the money in their own banking app, screenshot it, and attach it.
+4. They fill in name, phone and email, and press send.
+5. The screenshot goes into your Drive, a row lands in your sheet as `PENDING`,
+   they get a "we'll confirm soon" email, and you get an alert.
+6. You look at the transfer and set the row to `CONFIRMED` or `REJECTED`.
 
-Open http://localhost:5173. The door panel is at `/admin`, password `letmein`
-in development.
-
-```bash
-npm test              # the booking and API tests
-npm run typecheck
-npm run build         # builds both; the API then serves the front end itself
-npm start             # single process on :4000, front end included
-```
-
-## THE RULE is a constraint, not a convention
-
-One party at a time is enforced three deep, so nothing in the UI has to
-remember it:
-
-- `CREATE UNIQUE INDEX one_live_party ON parties(status) WHERE status = 'live'`
-  — the database physically cannot hold two live parties.
-- Publishing a draft while another party is live returns `409
-  one_party_at_a_time` and names the party you have to end first.
-- With no live party the site renders its **NOT YET** state — archive and
-  nothing else. That is a designed state, not an empty page.
-
-The site also ages itself off the clock, with no cron and no admin action:
-
-| When | The page |
-|---|---|
-| Before doors | countdown to doors, tiers, `GET IN` |
-| Doors → end | `HAPPENING NOW`, countdown to the end of the night |
-| After the end | `IT'S OVER`, dead buttons, "nothing is planned" |
-| No live party | `NOT YET` |
-
-## Tickets cannot be oversold
-
-`createBooking` runs in one SQLite transaction, and the UPDATE that takes the
-seats carries its own guard:
-
-```sql
-UPDATE tiers SET sold = sold + ? WHERE id = ? AND quantity - sold >= ?
-```
-
-If two people tap *BOOK IT* on the last two tickets in the same millisecond,
-the second UPDATE matches no rows and its whole transaction rolls back. On top
-of that, `tiers` has `CHECK (sold <= quantity)`, and the room's own capacity is
-checked across every tier. The test suite hammers this (`never oversells under
-a burst of bookings`).
-
-Cancelling a booking puts the seats back on sale. Checking in is idempotent —
-a screenshot passed round the queue admits the same people once, and the door
-panel says `⚠ already scanned` on the second try.
-
-## Payments
-
-`PAYMENT_PROVIDER=mock` (default): no money moves. Bookings confirm instantly
-and the ticket reads *pay at the door*. Everything works end to end with no
-accounts and no keys.
-
-`PAYMENT_PROVIDER=stripe`: real Stripe Checkout via the REST API — no SDK
-dependency. Set `STRIPE_SECRET_KEY`, point a webhook at
-`POST /api/webhooks/stripe` for `checkout.session.completed`, and set
-`STRIPE_WEBHOOK_SECRET`. The booking is held as `pending` until the webhook
-confirms it; if the session can't be created the seats are released rather than
-left hanging. Signature verification (including replay tolerance) is
-hand-rolled in `payments.ts` and unit tested.
-
-> The Stripe path is written but has not been run against Stripe from here —
-> there are no keys in this environment. Test it in Stripe test mode before a
-> real on-sale.
+No card processing, no QR codes, no tickets to scan. `REJECTED` puts the spot
+back on sale automatically; everything else is you and the sheet.
 
 ## Running a party
 
-Everything is in the door panel at `/admin`:
+Everything lives in `src/content.ts`: name, date, venue, capacity, ticket types
+and prices, lineup, house rules, your InstaPay details, the archive. Edit it,
+push, and the site updates itself.
 
-1. Create the party (name, volume, date, venue, capacity, lineup, house rules,
-   ticket tiers). `accent` is a hex colour and repaints the entire site — every
-   party looks like itself.
-2. End the current party. Then publish the new one.
-3. Watch it sell: sold / capacity, bookings, people in the room, takings.
-4. On the night, type or scan references into **CHECK SOMEONE IN**.
+- `accent` is a hex colour and repaints the entire site, so each party looks
+  like itself.
+- Set `party: null` when there isn't one, and the site shows its **NOT YET**
+  state — the archive and nothing else. That is a designed state, not an
+  empty page.
+- The site ages itself off the clock with no action from you:
 
-Ticket references (`GB-4KX7-9QMD`) avoid `0/O/1/I/L` and are read leniently —
-lower case, no dashes, spaces, all fine. Somebody is reading these off a
-cracked phone screen next to a speaker.
+| When | The page |
+|---|---|
+| Before doors | countdown to doors, tickets, `RESERVE A SPOT` |
+| Doors → end | `HAPPENING NOW`, countdown to the end of the night |
+| After the end | `IT'S OVER`, dead buttons, "nothing is planned" |
+| `party: null` | `NOT YET` |
 
-## Seeing it live
+The "x left" counters come from the sheet: each ticket type's `quantity` in
+`content.ts`, minus what's been reserved. When a type runs out it disappears
+from the form; when everything runs out the site says SOLD OUT. If the sheet
+is unreachable the counters just don't appear — the page still works.
 
-There are three ways to look at this, in increasing order of realness.
+## Setting it up
 
-**1. The hosted preview** (no setup, works now)
+1. **The desk** — follow [`google-apps-script/README.md`](google-apps-script/README.md).
+   Three minutes, once. Paste the resulting URL into `reservationEndpoint`.
+2. **The content** — replace everything marked `PLACEHOLDER` in
+   `src/content.ts`, including your real InstaPay address and email.
+3. **Publishing** — repo → **Settings → Pages → Source: GitHub Actions**. Every
+   push then builds and deploys automatically.
 
-A build of the front end with `VITE_DEMO=1`: the same React app, but instead of
-calling the API it answers its own requests in the browser
-(`apps/web/src/demo/`). Booking, the QR ticket and door check-in all work; the
-state lives in that browser's localStorage, so it is per-visitor and resets
-when site data is cleared. Nothing is charged.
-
-**2. GitHub Pages** (one click, then automatic)
-
-`.github/workflows/pages.yml` builds the same demo on every push. It needs
-Pages switched on once: **repo → Settings → Pages → Source: GitHub Actions**.
-After that it publishes to `https://<user>.github.io/<repo>/` on every push.
-
-**3. The real stack** (the one that actually sells tickets)
+Locally:
 
 ```bash
-docker build -t gummybears .
-docker run -p 4000:4000 -v gummybears-data:/app/apps/api/data \
-  -e ADMIN_PASSWORD=... -e SESSION_SECRET=$(openssl rand -hex 32) \
-  -e WEB_ORIGIN=https://your-domain gummybears
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # static files in dist/
 ```
 
-One container: Express serves the API and the built front end from the same
-port. `render.yaml` is a Render blueprint for the same thing with a persistent
-disk attached — New → Blueprint, point it at the repo, set `ADMIN_PASSWORD`.
-Fly, Railway or any VPS work the same way. **Keep the data volume**: that
-SQLite file is the bookings.
+With no `reservationEndpoint` set, the form still runs end to end but sends
+nothing, and the confirmation screen says so instead of pretending.
 
+## Notes
 
-## Deploying
-
-Simplest: one process. `npm run build` then `npm start` — the API serves the
-built front end from the same port, so there is no CORS and no second host.
-Works on Fly, Render, Railway, a VPS. Set `ADMIN_PASSWORD`, `SESSION_SECRET`
-and `WEB_ORIGIN`; the server refuses to boot in production without the first
-two. Keep `apps/api/data/` on a persistent volume — that file is the bookings.
-
-Split hosting also works: put `apps/web/dist` on Netlify or Vercel (SPA
-rewrite to `index.html`), host the API anywhere, and set `WEB_ORIGIN` to the
-front-end origin.
-
-## Known gaps, honestly
-
-- **No confirmation emails.** `notify.ts` logs the ticket link instead of
-  pretending to send. Implement that one function with Resend / Postmark / SES
-  and nothing else changes.
-- **The content is placeholder.** Instagram is blocked from the machine this
-  was built on, so @thegummybeaars could not be read — the party, venue,
-  lineup, prices and archive in `apps/api/src/seed.ts` are invented. Replace
-  them, or just enter the real party in `/admin` and run
-  `npm run seed -- --reset` to clear the fakes.
-- **No card payments until Stripe keys are set** (see above).
-- **Refunds** are not automated; cancelling a booking frees the seat but does
-  not move money.
+- Routing is hash-based (`/#/reserve`) because Pages has no server to rewrite
+  paths.
+- Screenshots are resized in the browser before upload, so a 6 MB photo
+  becomes a few hundred KB and still uploads on a bad signal outside a venue.
+- The form has a honeypot field; obvious bot submissions are dropped by the
+  script without a row.
+- No cookies, no analytics, no third-party scripts. Fonts come from Google
+  Fonts with system fallbacks.
+- An older version of this repo had a full Express + SQLite booking API with
+  Stripe and QR check-in. It is gone from the working tree but preserved in
+  git history at commit `29e9cd6`, if card payments are ever wanted.
