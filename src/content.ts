@@ -85,6 +85,9 @@ export const SITE = {
     note: 'Your spot is held once we check the transfer. If something is wrong with it we will message you.'
   },
 
+  /** Where the real site lives. Only used by the preview notice. */
+  liveUrl: 'https://omarashraf-z.github.io/ClaudeCode-enviroment/',
+
   /** How many tickets one person can reserve at once. */
   maxPerReservation: 4,
 

@@ -211,3 +211,11 @@
   background:var(--accent);color:var(--accent-ink);border:0;
   font-size:.85rem;line-height:1.5;text-align:left;margin:0 0 1.6rem;padding:.9rem 1rem;
 }
+
+/* Only ever rendered when no reservation desk is configured. */
+.preview-notice{
+  position:sticky;top:0;z-index:80;margin:0;
+  background:var(--accent);color:var(--accent-ink);
+  padding:.5rem var(--pad);font-size:.7rem;letter-spacing:.06em;text-align:center;
+}
+.preview-notice a{color:inherit}

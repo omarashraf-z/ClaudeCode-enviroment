@@ -2,6 +2,20 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SITE } from '../content';
 
+/** Shown only in builds with no reservation desk wired up (the design
+ *  preview). Without it, such a build looks exactly like the real site. */
+export function PreviewNotice() {
+  if (SITE.reservationEndpoint) return null;
+  return (
+    <p className="preview-notice">
+      PREVIEW — reservations are switched off here.{' '}
+      {SITE.liveUrl ? (
+        <>The real site is <a href={SITE.liveUrl}>{SITE.liveUrl.replace(/^https?:\/\//, '')}</a></>
+      ) : null}
+    </p>
+  );
+}
+
 export function Grain() {
   return <div className="grain" aria-hidden="true" />;
 }
