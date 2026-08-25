@@ -39,7 +39,7 @@ const CONFIG = {
     'Hi {{name}},\n\n' +
     'We have your reservation for {{party}} and your payment screenshot.\n' +
     'Reference: {{ref}} — {{quantity}} × {{ticket}}.\n\n' +
-    'We check every transfer by hand, so give us a little time. You will get ' +
+    'Give us a little time. You will get ' +
     'one more email from us once your spot is confirmed.\n\n' +
     '— ' + 'GUMMYBEARS'
 };

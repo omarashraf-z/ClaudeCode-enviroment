@@ -41,7 +41,6 @@ export interface Party {
   tickets: TicketType[];
   lineup?: { time: string; name: string; note?: string; headline?: boolean }[];
   rules?: string[];
-  creed?: string;
 }
 
 export const SITE = {
@@ -108,11 +107,7 @@ export const SITE = {
       'No tickets on the door.',
       '18+.',
       'BYOB.'
-    ],
-    creed:
-      'We throw one party. We put everything into it. Then we stop, and there is nothing to buy, ' +
-      'nothing to follow, nothing to scroll. When the next one exists, this page will be that ' +
-      'party instead — and this one will only exist in the memory of the people who were there.'
+    ]
   } as Party | null,
 
   /** Everything already done. Newest first. */

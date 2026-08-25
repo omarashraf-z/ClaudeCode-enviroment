@@ -71,10 +71,9 @@ export default function HomePage() {
           </>
         ) : null}
 
-        {party?.creed ? (
+        {party ? (
           <section className="sec creed" id="creed">
             <p className="creed__big">ONE PARTY.<br />ONE NIGHT.<br />THEN IT’S GONE.</p>
-            <p className="creed__body">{party.creed}</p>
           </section>
         ) : null}
 
@@ -249,10 +248,6 @@ function TicketSection({
       ) : (
         <span className="btn btn--big btn--full is-dead">SOLD OUT</span>
       )}
-      <p className="fineprint">
-        You pay by {SITE.payment.label} and send us the screenshot. We check every transfer by
-        hand and confirm you by email. If it sells out, it sells out — we don’t add capacity.
-      </p>
     </section>
   );
 }
@@ -314,7 +309,7 @@ function ArchiveSection() {
   return (
     <section className="sec" id="archive">
       <h2 className="sec__h">GONE</h2>
-      <p className="sec__lede">Everything we’ve already done. You can’t get into any of it.</p>
+      <p className="sec__lede">Everything we’ve already done.</p>
       <ul className="archive">
         {SITE.archive.map((entry) => (
           <li className="arch" key={entry.name}>

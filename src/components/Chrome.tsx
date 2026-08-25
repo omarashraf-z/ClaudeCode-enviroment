@@ -33,7 +33,6 @@ export function TopBar({ cta }: { cta?: { label: string; to: string } | null }) 
   return (
     <header className={`bar${stuck ? ' is-stuck' : ''}`}>
       <Link className="bar__logo" to="/">GUMMYBEARS</Link>
-      <p className="bar__motto" aria-hidden="true">ONE PARTY AT A TIME</p>
       {cta ? (
         <Link className="bar__cta" to={cta.to}>{cta.label}</Link>
       ) : null}
