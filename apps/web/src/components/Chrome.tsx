@@ -46,7 +46,7 @@ export function SiteFooter() {
     <footer className="foot">
       <p className="foot__mark">GUMMYBEARS</p>
       <nav className="foot__links">
-        <a href="https://instagram.com/thegummybeaars" target="_blank" rel="noopener">INSTAGRAM</a>
+        <a href="https://www.instagram.com/thegummybeaars/" target="_blank" rel="noopener">INSTAGRAM</a>
         <a href="mailto:door@gummybears.party">EMAIL</a>
         <Link to="/admin">DOOR</Link>
       </nav>
