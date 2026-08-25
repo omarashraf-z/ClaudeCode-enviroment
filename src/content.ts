@@ -70,7 +70,15 @@ export const SITE = {
   },
 
   /** How many tickets one person can reserve at once. */
-  maxPerReservation: 4
+  maxPerReservation: 4,
+
+  /* ── The mailer ──────────────────────────────────────────────────────────
+     A Google Apps Script web app (google-apps-script/) that does nothing
+     but send the two guest emails — "we got it" and "you're confirmed".
+     Leave '' to skip sending mail entirely. */
+  mailEndpoint:
+    (import.meta.env.VITE_MAIL_ENDPOINT as string | undefined) ||
+    'https://script.google.com/macros/s/AKfycbwGBcEOS4cWalPALpqEaRVCsY3ldBDzfUmZv4UsLKc24Gr_EdLcWgE-Usw6eCYGJWM8/exec'
 };
 
 export const money = (amount: number, currency = SITE.payment.currency) =>

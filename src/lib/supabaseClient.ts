@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 /* The anon key is a public, front-end key by design — Supabase enforces
    access with row-level security policies (see supabase/schema.sql), not by
-   keeping this secret. Overridable at build time the same way
-   VITE_RESERVATION_ENDPOINT overrides content.ts. */
+   keeping this secret. Overridable at build time via VITE_SUPABASE_URL /
+   VITE_SUPABASE_ANON_KEY, the same pattern SITE.mailEndpoint uses. */
 const SUPABASE_URL =
   (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
   'https://lpgrimrnfdnwgsepmits.supabase.co';

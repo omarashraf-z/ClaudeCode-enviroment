@@ -17,6 +17,7 @@ import {
   setReservationStatus,
   type AdminReservation
 } from '../lib/adminReservations';
+import { myTicketsUrl, sendConfirmedEmail } from '../lib/mailer';
 
 export default function AdminPage() {
   return (
@@ -61,10 +62,21 @@ function ReservationQueue() {
   const load = () => void fetchAllReservations().then(setReservations);
   useEffect(load, []);
 
-  async function decide(id: string, status: 'confirmed' | 'rejected') {
-    setBusyId(id);
+  async function decide(reservation: AdminReservation, status: 'confirmed' | 'rejected') {
+    setBusyId(reservation.id);
     try {
-      await setReservationStatus(id, status);
+      await setReservationStatus(reservation.id, status);
+      if (status === 'confirmed') {
+        await sendConfirmedEmail({
+          name: reservation.name,
+          email: reservation.email,
+          party: reservation.partyName,
+          ref: reservation.ref,
+          ticket: reservation.ticket,
+          quantity: reservation.quantity,
+          ticketUrl: myTicketsUrl()
+        });
+      }
       load();
     } finally {
       setBusyId(null);
@@ -97,7 +109,7 @@ function ReservationQueue() {
           <li className="admin__row" key={r.id}>
             <div className="admin__row-main">
               <p className="admin__row-name">{r.name} <span className="admin__row-user">@{r.username}</span></p>
-              <p className="admin__row-detail">{r.quantity} × {r.ticket} — {money(r.amount)} — {r.partyName}</p>
+              <p className="admin__row-detail">{r.ref} — {r.quantity} × {r.ticket} — {money(r.amount)} — {r.partyName}</p>
               <p className="admin__row-detail">{r.phone} · {r.email}</p>
               {r.note ? <p className="admin__row-detail">Note: {r.note}</p> : null}
               {r.receiptUrl ? (
@@ -112,7 +124,7 @@ function ReservationQueue() {
                   className="btn btn--big"
                   type="button"
                   disabled={busyId === r.id}
-                  onClick={() => decide(r.id, 'confirmed')}
+                  onClick={() => decide(r, 'confirmed')}
                 >
                   ACCEPT
                 </button>
@@ -120,7 +132,7 @@ function ReservationQueue() {
                   className="btn btn--ghost"
                   type="button"
                   disabled={busyId === r.id}
-                  onClick={() => decide(r.id, 'rejected')}
+                  onClick={() => decide(r, 'rejected')}
                 >
                   REJECT
                 </button>

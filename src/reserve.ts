@@ -6,6 +6,7 @@
  * account's "My tickets" page.
  */
 import { supabase } from './lib/supabaseClient';
+import { sendPendingEmail } from './lib/mailer';
 
 export interface ReservationInput {
   name: string;
@@ -25,6 +26,15 @@ export interface ReservationResult {
 }
 
 export class ReservationError extends Error {}
+
+/** Short and easy to read aloud — avoids characters that look alike (0/O,
+ *  1/I) since a guest might need to say this on the door. */
+function makeRef(): string {
+  const alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  let out = '';
+  for (let i = 0; i < 5; i++) out += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+  return 'GB-' + out;
+}
 
 /** Screenshots off a phone are 3–8 MB. Nobody needs that, and the upload has
  *  to survive a bad signal outside a venue, so shrink it first. */
@@ -77,28 +87,35 @@ export async function submitReservation(
     throw new ReservationError('Could not upload the screenshot. Check your connection and try again.');
   }
 
-  const { data, error } = await supabase
-    .from('reservations')
-    .insert({
-      user_id: userId,
-      party_name: input.party,
-      ticket: input.ticket,
-      quantity: input.quantity,
-      amount: input.amount,
-      name: input.name,
-      phone: input.phone,
-      email: input.email,
-      note: input.note,
-      receipt_path: path
-    })
-    .select('id')
-    .single();
+  const ref = makeRef();
+  const { error } = await supabase.from('reservations').insert({
+    user_id: userId,
+    ref,
+    party_name: input.party,
+    ticket: input.ticket,
+    quantity: input.quantity,
+    amount: input.amount,
+    name: input.name,
+    phone: input.phone,
+    email: input.email,
+    note: input.note,
+    receipt_path: path
+  });
 
-  if (error || !data) {
+  if (error) {
     throw new ReservationError('That did not go through. Try again.');
   }
 
-  return { ref: String(data.id).slice(0, 8).toUpperCase(), simulated: false };
+  await sendPendingEmail({
+    name: input.name,
+    email: input.email,
+    party: input.party,
+    ref,
+    ticket: input.ticket,
+    quantity: input.quantity
+  });
+
+  return { ref, simulated: false };
 }
 
 /** How many of each ticket type are already spoken for, for THIS party only
@@ -120,6 +137,7 @@ export async function fetchTaken(party: string): Promise<Record<string, number> 
 
 export interface MyReservation {
   id: string;
+  ref: string;
   partyName: string;
   ticket: string;
   quantity: number;
@@ -131,12 +149,13 @@ export interface MyReservation {
 export async function fetchMyReservations(userId: string): Promise<MyReservation[]> {
   const { data, error } = await supabase
     .from('reservations')
-    .select('id, party_name, ticket, quantity, amount, status, created_at')
+    .select('id, ref, party_name, ticket, quantity, amount, status, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   if (error || !data) return [];
   return data.map((row) => ({
     id: row.id,
+    ref: row.ref,
     partyName: row.party_name,
     ticket: row.ticket,
     quantity: row.quantity,

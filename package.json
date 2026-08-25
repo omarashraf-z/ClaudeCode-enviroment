@@ -2,7 +2,7 @@
   "name": "gummybears",
   "private": true,
   "version": "2.0.0",
-  "description": "Gummybears — one party at a time. A static site with a Google Sheets reservation desk behind it.",
+  "description": "Gummybears — one party at a time. A static site with accounts, an admin panel, and reservations backed by Supabase.",
   "type": "module",
   "scripts": {
     "dev": "vite",

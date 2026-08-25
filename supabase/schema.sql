@@ -111,6 +111,9 @@ create table public.reservations (
      PostgREST to embed profiles(username) alongside each reservation, which
      only works when there's a real foreign key straight to that table. */
   user_id uuid not null references public.profiles(id) on delete cascade,
+  /* Short, human-readable — the ID guests are actually shown, in the
+     confirmation screen, the admin panel, and both emails. */
+  ref text not null unique,
   party_name text not null,
   ticket text not null,
   quantity int not null check (quantity between 1 and 10),
@@ -181,3 +184,4 @@ insert into public.archive (name, sort_order) values
 -- 2. Sign up once on the live site with whatever username you want as the
 --    admin account, then run:
 --      update public.profiles set is_admin = true where username = 'YOUR_USERNAME';
+-- 3. Wire up the two guest emails — see google-apps-script/README.md.

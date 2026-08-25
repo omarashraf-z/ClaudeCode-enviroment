@@ -68,6 +68,7 @@ function TicketsList() {
               <span className="tier__price">{reservation.quantity} × {reservation.ticket}</span>
               <span className="tier__state">{money(reservation.amount)}</span>
             </span>
+            <span className="tier__extra tier__note">{reservation.ref}</span>
           </li>
         ))}
       </ul>

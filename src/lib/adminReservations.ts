@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient';
 
 export interface AdminReservation {
   id: string;
+  ref: string;
   username: string;
   partyName: string;
   ticket: string;
@@ -19,7 +20,7 @@ export interface AdminReservation {
 export async function fetchAllReservations(): Promise<AdminReservation[]> {
   const { data, error } = await supabase
     .from('reservations')
-    .select('id, party_name, ticket, quantity, amount, name, phone, email, note, receipt_path, status, created_at, profiles(username)')
+    .select('id, ref, party_name, ticket, quantity, amount, name, phone, email, note, receipt_path, status, created_at, profiles(username)')
     .order('created_at', { ascending: false });
   if (error || !data) return [];
 
@@ -36,6 +37,7 @@ export async function fetchAllReservations(): Promise<AdminReservation[]> {
       const username = Array.isArray(profile) ? profile[0]?.username : profile?.username;
       return {
         id: row.id,
+        ref: row.ref,
         username: username ?? '(unknown)',
         partyName: row.party_name,
         ticket: row.ticket,

@@ -1,34 +1,37 @@
-# The reservation desk
+# The mailer
 
-The site has no server. Reservations go straight into a Google Sheet you own,
-through a small Google Apps Script. That script is `Code.gs` in this folder.
+Reservations, accounts, and the accept/reject decision all live in Supabase
+(see `supabase/schema.sql`). This script does one small thing on top of
+that: it sends the two emails a guest gets, because a browser can't send
+mail as you on its own. That's `Code.gs` in this folder.
 
-It takes about three minutes to set up, once.
+## Already have a deployment from before?
 
-## 1. Make the sheet
+If this site had reservations flowing through a Google Sheet before, you
+already have a script and a URL — you're just replacing what's *inside* the
+script. Skip to **2. Paste in the script**, then **3. Redeploy** below. The
+URL stays the same, so nothing else needs to change.
 
-Go to [sheets.new](https://sheets.new) and name it something like
-**Gummybears reservations**. Leave it empty — the script builds its own
-columns the first time somebody reserves.
+Starting fresh instead? It takes about two minutes.
+
+## 1. Make the script
+
+Go to [script.new](https://script.new). Any Google account works — it
+doesn't need to be attached to a sheet.
 
 ## 2. Paste in the script
 
-In that sheet: **Extensions → Apps Script**. Delete whatever is in the editor,
-paste the whole of `Code.gs`, and save (⌘/Ctrl + S).
+Delete whatever is in the editor, paste the whole of `Code.gs`, and save
+(⌘/Ctrl + S).
 
-At the top of the file, fill in:
+`pendingSubject`/`pendingBody` and `confirmedSubject`/`confirmedBody` are
+the two emails guests get. Rewrite them whenever you like —
+`{{name}}`, `{{party}}`, `{{ref}}`, `{{ticket}}`, `{{quantity}}` and (in the
+confirmed email only) `{{ticketUrl}}` get filled in.
 
-```js
-notifyEmail: 'you@example.com',   // where "somebody reserved" alerts go
-```
+## 3. Deploy (or redeploy)
 
-`guestSubject` and `guestBody` are the email your guests get. Rewrite them
-whenever you like — `{{name}}`, `{{ref}}`, `{{party}}`, `{{ticket}}` and
-`{{quantity}}` get filled in.
-
-## 3. Publish it
-
-**Deploy → New deployment → ⚙ → Web app**, then:
+**First time:** **Deploy → New deployment → ⚙ → Web app**, then:
 
 | Field | Set it to |
 |---|---|
@@ -37,52 +40,35 @@ whenever you like — `{{name}}`, `{{ref}}`, `{{party}}`, `{{ticket}}` and
 | Who has access | **Anyone** |
 
 Press **Deploy**. Google asks you to authorise it — it needs permission to
-write to your sheet, save files to your Drive, and send email as you. Click
-through the "unverified app" warning (it is unverified because it is yours,
-and nobody reviewed it).
+send email as you. Click through the "unverified app" warning (it is
+unverified because it is yours, and nobody reviewed it). Copy the **Web app
+URL** — it ends in `/exec`.
 
-Copy the **Web app URL**. It ends in `/exec`.
+**Already deployed, just changed the script:** **Deploy → Manage
+deployments → ✏️ → Version: New version → Deploy**. Editing the script
+without redeploying changes nothing on the live URL — that catches everyone
+once.
 
-> "Anyone" means anyone who has that URL can post a reservation. That is the
-> point — your visitors are anonymous. The URL is inside the site's JavaScript,
-> so treat it as public. The script drops obvious bot submissions, and you can
-> always redeploy for a fresh URL.
+> "Anyone" means anyone who has that URL can ask it to send an email using
+> this template. The URL is inside the site's JavaScript, so treat it as
+> public — same as the reservation desk before it. If that ever becomes a
+> problem, redeploy for a fresh URL.
 
 ## 4. Tell the site about it
 
 Paste the URL into `src/content.ts`:
 
 ```ts
-reservationEndpoint: 'https://script.google.com/macros/s/AKfy…/exec',
+mailEndpoint: 'https://script.google.com/macros/s/AKfy…/exec',
 ```
 
-Push, and the site is live and taking reservations. (If you'd rather not
-commit the URL, set a repository variable named `RESERVATION_ENDPOINT`
-instead — the Pages workflow passes it in at build time.)
+Or set a repository variable named `MAIL_ENDPOINT` if you'd rather not
+commit it, and pass it through the Pages workflow as `VITE_MAIL_ENDPOINT`.
 
-## What happens on each reservation
+Push, and reservations start sending mail.
 
-1. The screenshot is saved to a Drive folder called
-   **Gummybears — payment receipts**.
-2. A row is appended: received time, reference, **STATUS**, name, phone,
-   email, ticket, quantity, amount, a link to the screenshot, their note.
-3. The guest gets the "we got it" email.
-4. You get an alert email with a link straight to the receipt.
+## Checking it's working
 
-## Confirming people
-
-Open the sheet and change the **STATUS** cell:
-
-- `PENDING` — new, needs checking (yellow)
-- `CONFIRMED` — transfer checked, they're in (green)
-- `REJECTED` — no transfer arrived, or it's wrong (red)
-
-`REJECTED` rows stop counting against capacity, so the ticket goes back on
-sale automatically. Nothing else reads that column — telling the guest they're
-confirmed is still your email to write.
-
-## Changing the emails later
-
-Edit `guestBody` in the Apps Script editor, save, then **Deploy → Manage
-deployments → ✏️ → Version: New version → Deploy**. Editing without
-redeploying changes nothing on the live URL — that catches everyone once.
+Visit the web app URL in a browser with `?ping=1` on the end. You'll get
+back JSON with `canSendEmail` — the number of emails left in your daily
+quota. If that loads, the script can send mail.
